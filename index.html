@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="cs">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Spelling Bee Pro - Fixed</title>
+        <title>Learning Hub</title>
         <style>
             :root {
                 --primary: #f1c40f;
@@ -11,333 +11,142 @@
                 --success: #27ae60;
                 --error: #e74c3c;
                 --bg: #fdfcf0;
+                --card-hover: #fff9e6;
             }
             body {
                 font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
                 background-color: var(--bg);
-                display: flex;
-                justify-content: center;
-                align-items: center;
+                margin: 0;
+                padding: 2rem;
                 min-height: 100vh;
-                margin: 0;
             }
-            #game-container {
-                background: white;
-                padding: 2.5rem;
-                border-radius: 25px;
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            header {
                 text-align: center;
-                max-width: 450px;
-                width: 90%;
-                border-bottom: 8px solid var(--primary);
-            }
-            .bee-header {
-                font-size: 4rem;
-                margin: 0;
+                margin-bottom: 3rem;
             }
             h1 {
                 color: var(--secondary);
-                margin: 0.5rem 0 1.5rem 0;
-                font-size: 2.2rem;
+                font-size: 3rem;
+                margin: 0 0 0.5rem 0;
             }
-
-            #audio-btn {
-                background: var(--primary);
-                border: none;
-                width: 100px;
-                height: 100px;
-                border-radius: 50%;
-                cursor: pointer;
-                font-size: 2.5rem;
+            .subtitle {
+                color: #7f8c8d;
+                font-size: 1.2rem;
+            }
+            .section {
+                margin-bottom: 3rem;
+            }
+            .section-title {
+                color: var(--secondary);
+                font-size: 1.8rem;
                 margin-bottom: 1.5rem;
-                transition: all 0.2s;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                padding-bottom: 0.5rem;
+                border-bottom: 3px solid var(--primary);
+                display: inline-block;
             }
-            #audio-btn:hover {
-                transform: scale(1.05);
-                background: #f39c12;
+            .cards-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 1.5rem;
             }
-
-            input {
-                padding: 15px;
-                font-size: 1.3rem;
-                width: 100%;
-                box-sizing: border-box;
-                border: 3px solid #eee;
-                border-radius: 12px;
-                outline: none;
-                text-align: center;
+            .card {
+                background: white;
+                border-radius: 15px;
+                padding: 2rem;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+                cursor: pointer;
+                text-decoration: none;
+                color: inherit;
+                display: block;
+                border-bottom: 5px solid var(--primary);
+            }
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+                background-color: var(--card-hover);
+            }
+            .card-icon {
+                font-size: 3rem;
                 margin-bottom: 1rem;
             }
-            input:read-only {
-                background-color: #f9f9f9;
+            .card-title {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--secondary);
+                margin-bottom: 0.5rem;
+            }
+            .card-description {
                 color: #7f8c8d;
+                font-size: 1rem;
+                line-height: 1.5;
             }
-
-            .btn-main {
-                padding: 15px 25px;
-                font-size: 1.2rem;
-                background-color: var(--secondary);
-                color: white;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                font-weight: bold;
-                width: 100%;
-                margin-bottom: 10px;
-            }
-
-            #next-btn {
-                background-color: var(--success);
-            }
-            .btn-retry {
-                background-color: #8e44ad;
-                margin-top: 10px;
-            }
-
-            #feedback {
-                margin: 1rem 0;
-                min-height: 3.5rem;
-            }
-            .correct {
-                color: var(--success);
-                font-weight: bold;
-                font-size: 1.3rem;
-            }
-            .wrong-box {
-                border: 2px solid var(--error);
-                padding: 12px;
-                border-radius: 10px;
-                background: #fff5f5;
-            }
-            .correct-answer-text {
-                display: block;
-                font-size: 1.7rem;
-                color: var(--error);
-                letter-spacing: 1px;
-            }
-
-            .mistakes-list {
-                text-align: left;
-                background: #f9f9f9;
-                padding: 15px;
-                border-radius: 10px;
-                margin: 15px 0;
-                list-style: none;
-            }
-            #score-bar {
-                color: #95a5a6;
-                font-size: 0.95rem;
-                margin-top: 1.5rem;
+            .card-meta {
+                margin-top: 1rem;
+                padding-top: 1rem;
                 border-top: 1px solid #eee;
-                padding-top: 15px;
+                font-size: 0.9rem;
+                color: #95a5a6;
             }
-            .hidden {
-                display: none;
+            .badge {
+                display: inline-block;
+                padding: 0.3rem 0.8rem;
+                border-radius: 20px;
+                font-size: 0.85rem;
+                font-weight: bold;
+                margin-right: 0.5rem;
+            }
+            .badge-new {
+                background-color: var(--success);
+                color: white;
+            }
+            .badge-upcoming {
+                background-color: #3498db;
+                color: white;
+            }
+            .badge-date {
+                background-color: #ecf0f1;
+                color: var(--secondary);
+            }
+            footer {
+                text-align: center;
+                margin-top: 4rem;
+                padding-top: 2rem;
+                border-top: 1px solid #ddd;
+                color: #95a5a6;
             }
         </style>
     </head>
     <body>
-        <div id="game-container">
-            <div class="bee-header">🐝</div>
+        <div class="container">
+            <header>
+                <h1>🎓 Learning Hub</h1>
+                <p class="subtitle">Practice exercises and study materials</p>
+            </header>
 
-            <div id="welcome-screen">
-                <h1>Spelling Bee</h1>
-                <p>Procvič si 10 anglických slov. Poslouchej a piš.</p>
-                <button
-                    class="btn-main"
-                    id="start-btn"
-                    style="
-                        background-color: var(--primary);
-                        color: var(--secondary);
-                    "
-                >
-                    START
-                </button>
-            </div>
+            <div class="section">
+                <h2 class="section-title">🐝 Spelling Bee - English</h2>
+                <div class="cards-grid">
+                    <a href="spelling-bees/2025-02-16-test/" class="card">
+                        <div class="card-icon">🐝</div>
+                        <div class="card-title">Test - February 16</div>
+                        <div class="card-description">
+                            Practice 10 words for the upcoming test: Suggestion,
+                            Optional, Choice, Mustn't, Allow, Obligation,
+                            Mandatory, Excellent, Forbidden, Couldn't
+                        </div>
+                        <div class="card-meta">
+                            <span class="badge badge-new">NEW</span>
+                            <span class="badge badge-date">📅 Feb 16, 2025</span>
+                        </div>
+                    </a>
 
-            <div id="game-zone" class="hidden">
-                <button id="audio-btn">🔊</button>
-                <div id="input-area">
-                    <input
-                        type="text"
-                        id="user-input"
-                        placeholder="..."
-                        autocomplete="off"
-                    />
-                    <button id="submit-btn" class="btn-main">
-                        Ověřit (Enter)
-                    </button>
-                    <button id="next-btn" class="btn-main hidden">
-                        Pokračovat (Enter) ➔
-                    </button>
                 </div>
-                <div id="feedback"></div>
-                <div id="score-bar"></div>
-            </div>
-
-            <div id="final-screen" class="hidden">
-                <h1>Výsledek</h1>
-                <p
-                    id="final-score"
-                    style="font-size: 1.6rem; font-weight: bold"
-                ></p>
-                <div id="mistakes-container" class="hidden">
-                    <ul id="mistakes-display" class="mistakes-list"></ul>
-                    <button id="retry-mistakes-btn" class="btn-main btn-retry">
-                        Procvičit jen chyby
-                    </button>
-                </div>
-                <button
-                    class="btn-main"
-                    onclick="location.reload()"
-                    style="margin-top: 10px"
-                >
-                    Hrát znovu vše
-                </button>
             </div>
         </div>
-
-        <script>
-            const originalWords = [
-                "Suggestion",
-                "Optional",
-                "Choice",
-                "Mustn’t",
-                "Allow",
-                "Obligation",
-                "Mandatory",
-                "Excellent",
-                "Forbidden",
-                "Couldn’t",
-            ];
-            let currentWords = [],
-                mistakes = [],
-                currentIndex = 0,
-                score = 0,
-                isReviewingError = false;
-
-            const welcomeScreen = document.getElementById("welcome-screen"),
-                startBtn = document.getElementById("start-btn"),
-                gameZone = document.getElementById("game-zone"),
-                audioBtn = document.getElementById("audio-btn"),
-                userInput = document.getElementById("user-input"),
-                submitBtn = document.getElementById("submit-btn"),
-                nextBtn = document.getElementById("next-btn"),
-                feedback = document.getElementById("feedback"),
-                scoreBar = document.getElementById("score-bar"),
-                finalScreen = document.getElementById("final-screen"),
-                retryMistakesBtn =
-                    document.getElementById("retry-mistakes-btn");
-
-            function shuffle(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
-
-            function speak(text) {
-                const msg = new SpeechSynthesisUtterance();
-                msg.text = text;
-                msg.lang = "en-US";
-                msg.rate = 0.85;
-                window.speechSynthesis.speak(msg);
-            }
-
-            function startGame(wordList) {
-                currentWords = shuffle([...wordList]);
-                mistakes = [];
-                currentIndex = 0;
-                score = 0;
-                welcomeScreen.classList.add("hidden");
-                finalScreen.classList.add("hidden");
-                gameZone.classList.remove("hidden");
-                loadWord();
-            }
-
-            function loadWord() {
-                isReviewingError = false;
-                if (currentIndex < currentWords.length) {
-                    userInput.value = "";
-                    userInput.readOnly = false; // Místo disabled použijeme readOnly
-                    userInput.focus();
-                    feedback.innerHTML = "";
-                    submitBtn.classList.remove("hidden");
-                    nextBtn.classList.add("hidden");
-                    scoreBar.textContent = `Slovo: ${currentIndex + 1} / ${currentWords.length} | Body: ${score}`;
-                    speak(currentWords[currentIndex]);
-                } else {
-                    showFinal();
-                }
-            }
-
-            function checkWord() {
-                const val = userInput.value
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[‘’']/g, "'");
-                const correct = currentWords[currentIndex]
-                    .toLowerCase()
-                    .replace(/[‘’']/g, "'");
-                if (val === "") return;
-
-                userInput.readOnly = true;
-                submitBtn.classList.add("hidden");
-
-                if (val === correct) {
-                    feedback.innerHTML = `<div class="correct">Výborně! ✨</div>`;
-                    score++;
-                    setTimeout(nextStep, 800);
-                } else {
-                    isReviewingError = true;
-                    if (!mistakes.includes(currentWords[currentIndex]))
-                        mistakes.push(currentWords[currentIndex]);
-                    feedback.innerHTML = `<div class="wrong-box">Špatně, správně je:<br><strong class="correct-answer-text">${currentWords[currentIndex]}</strong></div>`;
-                    nextBtn.classList.remove("hidden");
-                }
-            }
-
-            function nextStep() {
-                currentIndex++;
-                loadWord();
-            }
-
-            function showFinal() {
-                gameZone.classList.add("hidden");
-                finalScreen.classList.remove("hidden");
-                document.getElementById("final-score").textContent =
-                    `Skóre: ${score} z ${currentWords.length}`;
-                if (mistakes.length > 0) {
-                    document
-                        .getElementById("mistakes-container")
-                        .classList.remove("hidden");
-                    document.getElementById("mistakes-display").innerHTML =
-                        mistakes.map((m) => `<li>${m}</li>`).join("");
-                }
-            }
-
-            startBtn.addEventListener("click", () => startGame(originalWords));
-            audioBtn.addEventListener("click", () =>
-                speak(currentWords[currentIndex]),
-            );
-            submitBtn.addEventListener("click", checkWord);
-            nextBtn.addEventListener("click", nextStep);
-            retryMistakesBtn.addEventListener("click", () =>
-                startGame(mistakes),
-            );
-
-            // Klíčová oprava: událost nasazená na celé okno nebo input
-            userInput.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                    if (!isReviewingError) {
-                        checkWord();
-                    } else {
-                        nextStep();
-                    }
-                }
-            });
-        </script>
     </body>
 </html>
