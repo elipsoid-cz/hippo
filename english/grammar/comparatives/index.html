@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparatives & Superlatives Practice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #f1c40f;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #fdfcf0;
+            --cyan: #06b6d4;
+            --purple: #a855f7;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fae8ff 50%, #fef3c7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .breadcrumb {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .breadcrumb a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            background: white;
+            color: var(--secondary);
+            text-decoration: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .breadcrumb a:hover {
+            background: var(--primary);
+            transform: translateX(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 60px auto 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-green {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .word-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .base-word {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        input {
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+        }
+
+        input.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+
+        input.incorrect {
+            border-color: var(--error);
+            background: #fee2e2;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-check {
+            background: var(--success);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-check:hover {
+            filter: brightness(110%);
+            transform: translateY(-2px);
+        }
+
+        .btn-next {
+            background: var(--cyan);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-next:hover {
+            filter: brightness(110%);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            background: #fef3c7;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #78350f;
+            margin-top: 15px;
+        }
+
+        .hint ul {
+            margin: 5px 0 0 20px;
+        }
+
+        .score-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .score-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .score-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-practice {
+            background: var(--primary);
+            color: var(--secondary);
+            margin-top: 15px;
+        }
+
+        .btn-practice:hover {
+            filter: brightness(110%);
+        }
+
+        .word-list {
+            margin-top: 15px;
+        }
+
+        .word-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .pill {
+            background: #fef3c7;
+            color: #78350f;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="breadcrumb">
+        <a href="../../../">← Home</a>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📊 Comparatives & Superlatives</h1>
+            <p class="subtitle">Practice forming comparative and superlative adjectives</p>
+        </div>
+
+        <div id="game-card" class="card">
+            <div class="progress">
+                <span class="badge badge-blue" id="word-count">Word 1 / 10</span>
+                <span class="badge badge-green" id="score-display">Score: 0</span>
+            </div>
+
+            <div class="word-display">
+                <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 5px;">Base adjective:</div>
+                <div class="base-word" id="current-word">strong</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="comparative">Comparative form</label>
+                    <input type="text" id="comparative" placeholder="e.g., stronger" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="superlative">Superlative form</label>
+                    <input type="text" id="superlative" placeholder="e.g., strongest" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-check" id="action-btn">Check Answers</button>
+            </div>
+
+            <div id="hint" class="hint hidden">
+                <strong>Correct answers:</strong>
+                <ul id="hint-list"></ul>
+            </div>
+        </div>
+
+        <div id="result-panel" class="score-panel hidden">
+            <div class="score-header">🎉 Game Complete!</div>
+            <div class="score-badges">
+                <span class="badge badge-green">Correct: <span id="final-correct">0</span></span>
+                <span class="badge badge-error" style="background: #fee2e2; color: #991b1b;">Wrong: <span id="final-wrong">0</span></span>
+            </div>
+            <div id="mistakes-section" class="word-list hidden">
+                <div style="font-weight: 600; margin-top: 15px;">Words to practice:</div>
+                <div class="word-pills" id="mistake-pills"></div>
+            </div>
+            <button class="btn-practice" id="practice-btn">Practice Mistakes</button>
+            <button class="btn-practice" id="restart-btn" style="background: var(--cyan); color: white;">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const WORDS = [
+            { base: "strong", comp: ["stronger"], sup: ["strongest"] },
+            { base: "big", comp: ["bigger"], sup: ["biggest"] },
+            { base: "tall", comp: ["taller"], sup: ["tallest"] },
+            { base: "clever", comp: ["cleverer", "more clever"], sup: ["cleverest", "most clever"] },
+            { base: "funny", comp: ["funnier"], sup: ["funniest"] },
+            { base: "careful", comp: ["more careful"], sup: ["most careful"] },
+            { base: "boring", comp: ["more boring"], sup: ["most boring"] },
+            { base: "interesting", comp: ["more interesting"], sup: ["most interesting"] },
+            { base: "loud", comp: ["louder"], sup: ["loudest"] },
+            { base: "quiet", comp: ["quieter"], sup: ["quietest"] },
+        ];
+
+        let currentIndex = 0;
+        let shuffledWords = [];
+        let answers = {};
+        let mistakes = [];
+        let practiceMode = false;
+
+        const norm = (s) => (s || "").toLowerCase().trim().replace(/\\s+/g, " ");
+        const isAny = (val, arr) => arr.map(norm).includes(norm(val));
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startGame(wordList = WORDS) {
+            shuffledWords = shuffle(wordList);
+            currentIndex = 0;
+            answers = {};
+            mistakes = [];
+            practiceMode = wordList !== WORDS;
+
+            document.getElementById('game-card').classList.remove('hidden');
+            document.getElementById('result-panel').classList.add('hidden');
+
+            showWord();
+        }
+
+        function showWord() {
+            if (currentIndex >= shuffledWords.length) {
+                showResults();
+                return;
+            }
+
+            const word = shuffledWords[currentIndex];
+            document.getElementById('current-word').textContent = word.base;
+            document.getElementById('word-count').textContent = `Word ${currentIndex + 1} / ${shuffledWords.length}`;
+
+            const compInput = document.getElementById('comparative');
+            const supInput = document.getElementById('superlative');
+
+            compInput.value = answers[word.base]?.comp || '';
+            supInput.value = answers[word.base]?.sup || '';
+            compInput.className = '';
+            supInput.className = '';
+
+            document.getElementById('hint').classList.add('hidden');
+            compInput.focus();
+
+            updateScore();
+            updateActionButton();
+        }
+
+        function updateActionButton() {
+            const word = shuffledWords[currentIndex];
+            const currentAnswers = answers[word.base];
+            const actionBtn = document.getElementById('action-btn');
+
+            if (currentAnswers && currentAnswers.compOk && currentAnswers.supOk) {
+                actionBtn.textContent = 'Next Word →';
+                actionBtn.className = 'btn-next';
+            } else {
+                actionBtn.textContent = 'Check Answers';
+                actionBtn.className = 'btn-check';
+            }
+        }
+
+        function updateScore() {
+            const correct = Object.values(answers).filter(a => a.compOk && a.supOk).length;
+            document.getElementById('score-display').textContent = `Score: ${correct}`;
+        }
+
+        function checkAnswers() {
+            const word = shuffledWords[currentIndex];
+            const compInput = document.getElementById('comparative');
+            const supInput = document.getElementById('superlative');
+
+            const compVal = compInput.value.trim();
+            const supVal = supInput.value.trim();
+
+            const compOk = isAny(compVal, word.comp);
+            const supOk = isAny(supVal, word.sup);
+
+            answers[word.base] = {
+                comp: compVal,
+                sup: supVal,
+                compOk,
+                supOk
+            };
+
+            compInput.className = compOk ? 'correct' : 'incorrect';
+            supInput.className = supOk ? 'correct' : 'incorrect';
+
+            if (!compOk || !supOk) {
+                if (!mistakes.includes(word.base)) {
+                    mistakes.push(word.base);
+                }
+                showHint(word);
+            }
+
+            updateScore();
+            updateActionButton();
+        }
+
+        function showHint(word) {
+            const hint = document.getElementById('hint');
+            const hintList = document.getElementById('hint-list');
+
+            hintList.innerHTML = `
+                <li>Comparative: <strong>${word.comp.join(' / ')}</strong></li>
+                <li>Superlative: <strong>${word.sup.join(' / ')}</strong></li>
+            `;
+
+            hint.classList.remove('hidden');
+        }
+
+        function nextWord() {
+            checkAnswers();
+            currentIndex++;
+            showWord();
+        }
+
+        function showResults() {
+            const correct = Object.values(answers).filter(a => a.compOk && a.supOk).length;
+            const total = shuffledWords.length;
+            const wrong = total - correct;
+
+            document.getElementById('game-card').classList.add('hidden');
+            document.getElementById('result-panel').classList.remove('hidden');
+            document.getElementById('final-correct').textContent = correct;
+            document.getElementById('final-wrong').textContent = wrong;
+
+            if (mistakes.length > 0) {
+                document.getElementById('mistakes-section').classList.remove('hidden');
+                const pillsContainer = document.getElementById('mistake-pills');
+                pillsContainer.innerHTML = mistakes.map(base =>
+                    `<span class="pill">${base}</span>`
+                ).join('');
+            } else {
+                document.getElementById('mistakes-section').classList.add('hidden');
+            }
+
+            document.getElementById('practice-btn').style.display = mistakes.length > 0 ? 'inline-block' : 'none';
+        }
+
+        document.getElementById('action-btn').addEventListener('click', () => {
+            const word = shuffledWords[currentIndex];
+            const currentAnswers = answers[word.base];
+
+            if (currentAnswers && currentAnswers.compOk && currentAnswers.supOk) {
+                // Button says "Next Word" - go to next
+                currentIndex++;
+                showWord();
+            } else {
+                // Button says "Check Answers" - check them
+                checkAnswers();
+            }
+        });
+
+        document.getElementById('practice-btn').addEventListener('click', () => {
+            const mistakeWords = WORDS.filter(w => mistakes.includes(w.base));
+            startGame(mistakeWords);
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            startGame();
+        });
+
+        document.getElementById('comparative').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('superlative').focus();
+            }
+        });
+
+        document.getElementById('superlative').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const word = shuffledWords[currentIndex];
+                const currentAnswers = answers[word.base];
+
+                // If already checked and both correct, go to next word
+                if (currentAnswers && currentAnswers.compOk && currentAnswers.supOk) {
+                    currentIndex++;
+                    showWord();
+                } else {
+                    // Otherwise check answers
+                    checkAnswers();
+                }
+            }
+        });
+
+        startGame();
+    </script>
+</body>
+</html>

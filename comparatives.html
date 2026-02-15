@@ -1,0 +1,539 @@
+import React, { useMemo, useRef, useState, useEffect } from "react";
+
+// ================================================================
+// Comparatives & Superlatives — Offline Mini‑games
+// Single‑file React app: 3 games + collapsible help + self‑tests
+// ================================================================
+
+// ---------- Data ----------
+const WORDS = [
+  { base: "strong", comp: ["stronger"], sup: ["strongest"] },
+  { base: "big", comp: ["bigger"], sup: ["biggest"] },
+  { base: "tall", comp: ["taller"], sup: ["tallest"] },
+  { base: "clever", comp: ["cleverer", "more clever"], sup: ["cleverest", "most clever"] },
+  { base: "funny", comp: ["funnier"], sup: ["funniest"] },
+  { base: "careful", comp: ["more careful"], sup: ["most careful"] },
+  { base: "boring", comp: ["more boring"], sup: ["most boring"] },
+  { base: "interesting", comp: ["more interesting"], sup: ["most interesting"] },
+  { base: "loud", comp: ["louder"], sup: ["loudest"] },
+  { base: "quiet", comp: ["quieter"], sup: ["quietest"] },
+];
+
+// ---------- Helpers ----------
+const norm = (s) => (s || "").toLowerCase().trim().replace(/\s+/g, " ");
+const isAny = (val, arr) => arr.map(norm).includes(norm(val));
+const shuffle = (arr) => {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// ---------- Audio (offline via WebAudio) ----------
+function useTone() {
+  const ctxRef = useRef(null);
+  const ensureCtx = () => {
+    if (!ctxRef.current) ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    return ctxRef.current;
+  };
+  const play = (freq = 880, dur = 0.12, type = "sine") => {
+    try {
+      const ctx = ensureCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ctx.destination);
+      const now = ctx.currentTime;
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.exponentialRampToValueAtTime(0.22, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      o.start(now);
+      o.stop(now + dur + 0.02);
+    } catch {}
+  };
+  const success = () => { play(1046.5, 0.12, "triangle"); setTimeout(() => play(1318.5, 0.12, "triangle"), 120); };
+  const error = () => { play(196, 0.16, "sawtooth"); };
+  return { success, error };
+}
+
+// ---------- UI atoms ----------
+const Pill = ({ children, className = "" }) => (
+  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${className}`}>{children}</span>
+);
+
+const Card = ({ children, className = "" }) => (
+  <div className={`rounded-2xl shadow-lg p-4 md:p-6 bg-white/80 backdrop-blur border ${className}`}>{children}</div>
+);
+
+const TabButton = ({ active, onClick, children }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2 rounded-full text-sm font-semibold transition transform active:scale-95 shadow ${
+      active ? "bg-gradient-to-r from-fuchsia-500 to-cyan-500 text-white" : "bg-white text-slate-700 border"
+    }`}
+  >
+    {children}
+  </button>
+);
+
+function ConfettiBurst({ trigger }) {
+  const [puffs, setPuffs] = useState(0);
+  useEffect(() => { if (trigger) setPuffs((n) => n + 1); }, [trigger]);
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      {Array.from({ length: puffs }).map((_, idx) => (<Confetti key={idx} />))}
+    </div>
+  );
+}
+
+function Confetti() {
+  const bits = useMemo(() => Array.from({ length: 24 }).map(() => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 0.2,
+    rot: Math.random() * 360,
+    dur: 0.9 + Math.random() * 0.6,
+    size: 6 + Math.random() * 8,
+  })), []);
+  return (
+    <div className="absolute inset-0">
+      {bits.map((b, i) => (
+        <span
+          key={i}
+          className="absolute block will-change-transform"
+          style={{
+            left: `${b.left}%`, top: 0, width: b.size, height: b.size,
+            background: `hsl(${Math.floor(Math.random()*360)} 90% 60%)`,
+            borderRadius: 2, transform: `rotate(${b.rot}deg)`,
+            animation: `fall ${b.dur}s ease-out ${b.delay}s both`,
+          }}
+        />
+      ))}
+      <style>{`@keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: .2; } }`}</style>
+    </div>
+  );
+}
+
+function ScorePanel({ correct, total, onPractice, mistakesCount }) {
+  return (
+    <Card className="mt-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="text-lg font-bold">Score: {correct} / {total}</div>
+        <div className="flex gap-2 flex-wrap">
+          <Pill className="bg-emerald-100 text-emerald-700">Correct: {correct}</Pill>
+          <Pill className="bg-rose-100 text-rose-700">Wrong: {Math.max(0, total - correct)}</Pill>
+          <Pill className="bg-amber-100 text-amber-700">To practice: {mistakesCount}</Pill>
+          <button onClick={onPractice} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white font-semibold shadow hover:brightness-110">
+            Practice mistakes
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ================================================================
+// Game 1 — Pick the Forms (ADJECTIVE → COMPARATIVE → SUPERLATIVE)
+// 4 options per prompt, highlighted instruction, multiple correct allowed
+// ================================================================
+function GamePick({ pool, onComplete }) {
+  const { success, error } = useTone();
+  const [index, setIndex] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [mistakes, setMistakes] = useState([]);
+  const [confetti, setConfetti] = useState(false);
+  const words = useMemo(() => shuffle(pool), [pool]);
+
+  const phases = ["base", "comp", "sup"]; // adjective → comparative → superlative
+  const [phase, setPhase] = useState(phases[0]);
+
+  const buildOptions = (word, phase) => {
+    const correctOpts = phase === "base" ? [word.base] : [...word[phase]]; // 1 or 2
+    const distractorSet = new Set();
+    if (phase !== "base") distractorSet.add(word.base);
+    if (phase !== "comp") distractorSet.add(word.comp[0]);
+    if (phase !== "sup") distractorSet.add(word.sup[0]);
+    shuffle(pool.filter((w) => w.base !== word.base)).forEach((ow) => {
+      distractorSet.add(ow.base); distractorSet.add(ow.comp[0]); distractorSet.add(ow.sup[0]);
+    });
+    correctOpts.forEach((c) => distractorSet.delete(c));
+    const out = [];
+    for (const c of correctOpts) { if (out.length < 4) out.push(c); }
+    for (const d of distractorSet) { if (out.length >= 4) break; out.push(d); }
+    return shuffle(out.slice(0,4));
+  };
+
+  if (!words.length) return <div className="text-slate-600">No items.</div>;
+
+  const w = words[index];
+  const opts = buildOptions(w, phase);
+
+  const handlePick = (val) => {
+    const ok = phase === "base" ? norm(val) === norm(w.base) : isAny(val, w[phase]);
+    if (ok) {
+      setConfetti(true); success();
+      const pIdx = phases.indexOf(phase);
+      if (pIdx < phases.length - 1) {
+        setPhase(phases[pIdx + 1]);
+      } else {
+        const newCorrect = correct + 1;
+        setCorrect(newCorrect);
+        setPhase(phases[0]);
+        const nextIndex = index + 1;
+        if (nextIndex >= words.length) onComplete && onComplete({ correct: newCorrect, total: words.length, mistakes });
+        else setIndex(nextIndex);
+      }
+    } else {
+      error();
+      setMistakes((arr) => (arr.includes(w.base) ? arr : [...arr, w.base]));
+    }
+  };
+
+  if (index >= words.length) return null;
+
+  const phaseLabel = phase === "base" ? "ADJECTIVE" : phase === "comp" ? "COMPARATIVE" : "SUPERLATIVE";
+  const phaseColor = phase === "base" ? "from-slate-600 to-slate-800" : phase === "comp" ? "from-cyan-500 to-sky-500" : "from-fuchsia-500 to-pink-500";
+
+  return (
+    <div>
+      <ConfettiBurst trigger={confetti} />
+      <Card>
+        <div className="flex items-center gap-3 mb-4">
+          <Pill className="bg-sky-100 text-sky-800">Round {index + 1} / {words.length}</Pill>
+          <Pill className="bg-emerald-100 text-emerald-800">Score {correct} ✓</Pill>
+        </div>
+        <div className="text-2xl md:text-3xl font-extrabold">Word: <span className="text-fuchsia-600">{w.base}</span></div>
+        <div className={`mt-3 p-3 md:p-4 rounded-xl border-2 bg-white/70 shadow-inner border-transparent bg-gradient-to-r ${phaseColor}`}>
+          <div className="bg-white/90 rounded-lg p-2 text-center">
+            <span className="block text-xs font-bold tracking-wider text-slate-500 uppercase">Instruction</span>
+            <span className="text-lg md:text-xl font-black">Pick the <span className="underline decoration-4 decoration-wavy decoration-fuchsia-400">{phaseLabel}</span></span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mt-4">
+          {opts.map((o, i) => (
+            <button key={i} onClick={() => handlePick(o)} className="p-3 rounded-xl bg-white border hover:border-fuchsia-400 hover:shadow transition text-lg font-bold">{o}</button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ================================================================
+// Game 2 — Type the Forms (Check + Next triggers validation)
+// ================================================================
+function GameType({ pool, onComplete }) {
+  const { success, error } = useTone();
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({}); // base -> { comp, sup, compOk, supOk }
+  const [mistakes, setMistakes] = useState([]);
+  const words = useMemo(() => shuffle(pool), [pool]);
+
+  const w = words[idx];
+
+  const evaluateCurrent = (base, currentAnswers, word) => {
+    const a = currentAnswers[base] || {};
+    const okC = isAny(a.comp, word.comp);
+    const okS = isAny(a.sup, word.sup);
+    const next = { compOk: okC, supOk: okS, comp: a.comp || "", sup: a.sup || "" };
+    const updated = { ...currentAnswers, [base]: next };
+    return { updated, okBoth: okC && okS };
+  };
+
+  const update = (key, val) => setAnswers((a) => ({ ...(a || {}), [w.base]: { ...(a?.[w.base] || {}), [key]: val } }));
+
+  const check = () => {
+    const { updated, okBoth } = evaluateCurrent(w.base, answers, w);
+    setAnswers(updated);
+    if (okBoth) success(); else { error(); setMistakes((arr) => (arr.includes(w.base) ? arr : [...arr, w.base])); }
+    return okBoth;
+  };
+
+  const nextWord = () => {
+    const { updated, okBoth } = evaluateCurrent(w.base, answers, w);
+    setAnswers(updated);
+    if (okBoth) success(); else { error(); setMistakes((arr) => (arr.includes(w.base) ? arr : [...arr, w.base])); }
+    const nextIdx = idx + 1;
+    if (nextIdx >= words.length) {
+      const correct = Object.values(updated).filter((x) => x.compOk && x.supOk).length;
+      onComplete && onComplete({ correct, total: words.length, mistakes });
+    } else {
+      setIdx(nextIdx);
+    }
+  };
+
+  if (!w) return null;
+  const a = answers[w.base] || {};
+
+  return (
+    <Card>
+      <div className="flex items-center gap-3 mb-4"><Pill className="bg-sky-100 text-sky-800">Word {idx + 1} / {words.length}</Pill></div>
+      <div className="text-2xl md:text-3xl font-extrabold">Base word: <span className="text-cyan-600">{w.base}</span></div>
+      <div className="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label className="text-sm font-semibold text-slate-600">Comparative</label>
+          <input className={`mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-cyan-400 text-lg ${a.compOk === true ? "border-emerald-400 bg-emerald-50" : a.compOk === false ? "border-rose-400 bg-rose-50" : ""}`} placeholder="Type comparative…" value={a.comp || ""} onChange={(e) => update("comp", e.target.value)} />
+        </div>
+        <div>
+          <label className="text-sm font-semibold text-slate-600">Superlative</label>
+          <input className={`mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-fuchsia-400 text-lg ${a.supOk === true ? "border-emerald-400 bg-emerald-50" : a.supOk === false ? "border-rose-400 bg-rose-50" : ""}`} placeholder="Type superlative…" value={a.sup || ""} onChange={(e) => update("sup", e.target.value)} />
+        </div>
+      </div>
+      <div className="flex gap-2 mt-4">
+        <button onClick={check} className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold shadow hover:brightness-110">Check</button>
+        <button onClick={nextWord} className="px-4 py-2 rounded-xl bg-slate-200 text-slate-800 font-bold shadow hover:brightness-110">Next</button>
+      </div>
+      {a.compOk === false || a.supOk === false ? (
+        <div className="mt-3 text-sm text-slate-600">
+          Correct forms:
+          <ul className="list-disc ml-6">
+            <li>Comparative: <b>{WORDS.find((x) => x.base === w.base).comp.join(" / ")}</b></li>
+            <li>Superlative: <b>{WORDS.find((x) => x.base === w.base).sup.join(" / ")}</b></li>
+          </ul>
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
+// ================================================================
+// Game 3 — Click in Order (base → comparative → superlative)
+// Wrong click = audio + wiggle, but not selected/disabled
+// ================================================================
+function GameOrder({ pool, onComplete }) {
+  const { success, error } = useTone();
+  const [i, setI] = useState(0);
+  const [stage, setStage] = useState(0); // 0 base, 1 comp, 2 sup
+  const [mistakes, setMistakes] = useState([]);
+  const [clicked, setClicked] = useState([]); // correct clicks only
+  const [wrongKey, setWrongKey] = useState(null); // transient visual clue
+  const words = useMemo(() => shuffle(pool), [pool]);
+  const w = words[i];
+
+  const seq = useMemo(() => {
+    if (!w) return [];
+    const arr = [w.base, w.comp[0], w.sup[0]];
+    return shuffle(arr);
+  }, [i]);
+
+  const expect = stage === 0 ? w.base : stage === 1 ? w.comp : w.sup;
+
+  const finishNow = () => {
+    const correct = words.length - mistakes.length;
+    onComplete && onComplete({ correct, total: words.length, mistakes });
+  };
+
+  const handlePick = (val) => {
+    if (clicked.includes(val)) return; // ignore repeat on already-correct
+    const ok = stage === 0 ? norm(val) === norm(w.base) : isAny(val, expect);
+
+    if (ok) {
+      success();
+      setClicked((arr) => [...arr, val]);
+      if (stage === 2) {
+        const nextI = i + 1;
+        setStage(0);
+        setClicked([]);
+        if (nextI >= words.length) finishNow(); else setI(nextI);
+      } else {
+        setStage((s) => s + 1);
+      }
+    } else {
+      error();
+      setWrongKey(val);
+      setTimeout(() => setWrongKey(null), 450);
+      setMistakes((arr) => (arr.includes(w.base) ? arr : [...arr, w.base]));
+    }
+  };
+
+  if (!w) return null;
+
+  return (
+    <Card>
+      <div className="flex items-center gap-3 mb-4">
+        <Pill className="bg-sky-100 text-sky-800">Item {i + 1} / {words.length}</Pill>
+        <Pill className="bg-violet-100 text-violet-800">Click in order: base → comparative → superlative</Pill>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {seq.map((s, idx) => {
+          const isClicked = clicked.includes(s);
+          const isWrong = wrongKey === s;
+          return (
+            <button
+              key={idx}
+              onClick={() => handlePick(s)}
+              disabled={isClicked}
+              className={`p-4 rounded-2xl border text-xl font-extrabold hover:shadow transition ${
+                isClicked
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 opacity-70"
+                  : isWrong
+                  ? "bg-rose-100 text-rose-700 border-rose-300 animate-wiggle"
+                  : "bg-white"
+              }`}
+            >
+              {s}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-4 text-sm text-slate-600">Now click: <b>{stage === 0 ? "base" : stage === 1 ? "comparative" : "superlative"}</b></div>
+      <style>{`
+        @keyframes wiggle { 0% { transform: translateX(0); } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-3px);} 100% { transform: translateX(0);} }
+        .animate-wiggle { animation: wiggle 0.45s ease; }
+      `}</style>
+    </Card>
+  );
+}
+
+// ================================================================
+// Practice wrapper (score + practice mistakes)
+// ================================================================
+function GameShell({ title, Component, pool, onPracticeReady }) {
+  const [result, setResult] = useState(null);
+  const [practicePool, setPracticePool] = useState(null);
+
+  const startOver = () => { setResult(null); setPracticePool(null); };
+
+  const handleComplete = (r) => {
+    setResult(r);
+    onPracticeReady && onPracticeReady(r.mistakes || []);
+  };
+
+  if (!result) {
+    return (
+      <div>
+        <h3 className="text-xl font-black mb-2">{title}</h3>
+        <Component pool={practicePool || pool} onComplete={handleComplete} />
+      </div>
+    );
+  }
+
+  const mistakesCount = result.mistakes?.length || 0;
+
+  return (
+    <div>
+      <h3 className="text-xl font-black mb-2">{title}</h3>
+      <ScorePanel
+        correct={result.correct}
+        total={result.total}
+        mistakesCount={mistakesCount}
+        onPractice={() => {
+          if (mistakesCount === 0) return;
+          setResult(null);
+          setPracticePool(WORDS.filter((w) => result.mistakes.includes(w.base)));
+        }}
+      />
+      <div className="mt-4">
+        <button onClick={startOver} className="px-4 py-2 rounded-xl bg-sky-500 text-white font-bold shadow hover:brightness-110">Play again</button>
+      </div>
+      {mistakesCount > 0 && (
+        <Card className="mt-4">
+          <div className="font-semibold mb-2">Words to practice:</div>
+          <div className="flex flex-wrap gap-2">
+            {result.mistakes.map((b) => (<Pill key={b} className="bg-amber-100 text-amber-800">{b}</Pill>))}
+          </div>
+          <div className="mt-3 text-sm text-slate-600">Tip: say them aloud: <i>big → bigger → biggest</i>.</div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ================================================================
+// Self‑tests (runtime assertions)
+// ================================================================
+function SelfTests() {
+  const tests = [
+    { name: "norm trims & lowers", run: () => norm("  BIG  ") === "big" },
+    { name: "isAny recognizes list", run: () => isAny("MORE BORING", ["more boring"]) },
+    { name: "shuffle keeps length", run: () => shuffle([1,2,3]).length === 3 },
+    { name: "forms present for all words", run: () => WORDS.every(w => w.base && w.comp?.length && w.sup?.length) },
+    { name: "comparative clever variants", run: () => isAny("more clever", WORDS.find(w=>w.base==="clever").comp) },
+    { name: "superlative clever variants", run: () => isAny("most clever", WORDS.find(w=>w.base==="clever").sup) },
+    { name: "words list size", run: () => WORDS.length === 10 },
+    { name: "quiet → quietest present", run: () => isAny("quietest", WORDS.find(w=>w.base==="quiet").sup) },
+  ];
+  const pass = tests.filter(t => { try { return !!t.run(); } catch { return false; } }).length;
+  return (
+    <Card className="mt-6">
+      <div className="font-bold">Self‑tests</div>
+      <div className="text-sm text-slate-600">{pass} / {tests.length} passed</div>
+      <ul className="text-sm list-disc ml-5 mt-1">{tests.map((t, i) => (<li key={i}>{t.name}</li>))}</ul>
+    </Card>
+  );
+}
+
+// ================================================================
+// Main App — tabs + collapsible help + router into games
+// ================================================================
+export default function App() {
+  const tabs = [
+    { key: "pick", label: "Pick the Forms", component: GamePick },
+    { key: "type", label: "Type the Forms", component: GameType },
+    { key: "order", label: "Click in Order", component: GameOrder },
+  ];
+  const [tab, setTab] = useState(tabs[0].key);
+  const [showHelp, setShowHelp] = useState(true);
+  const [practice, setPractice] = useState([]);
+
+  const current = tabs.find((t) => t.key === tab);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-fuchsia-50 to-amber-50 text-slate-800">
+      <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+        <header className="mb-6 md:mb-10">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl md:text-4xl font-black">
+              Comparatives & Superlatives
+              <span className="block text-base md:text-lg font-semibold text-slate-600">Offline mini‑games</span>
+            </h1>
+            <div className="flex gap-2 flex-wrap">
+              {tabs.map((t) => (
+                <TabButton key={t.key} active={t.key === tab} onClick={() => setTab(t.key)}>{t.label}</TabButton>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <main className="space-y-6">
+          <Card className="border-dashed">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-lg">Help / Word list</h2>
+              <button onClick={() => setShowHelp(v => !v)} className="text-sm px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border">{showHelp ? "Hide" : "Show"}</button>
+            </div>
+            {showHelp && (
+              <div className="flex flex-wrap gap-2 transition-all duration-300">
+                {WORDS.map((w) => (
+                  <div key={w.base} className="flex items-center gap-2 bg-white border rounded-xl px-3 py-2 shadow-sm">
+                    <Pill className="bg-slate-100 text-slate-800">{w.base}</Pill>
+                    <span className="text-slate-500">→</span>
+                    <Pill className="bg-cyan-100 text-cyan-800">{w.comp[0]}</Pill>
+                    <span className="text-slate-500">→</span>
+                    <Pill className="bg-fuchsia-100 text-fuchsia-800">{w.sup[0]}</Pill>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <GameShell
+            title={current.label}
+            Component={current.component}
+            pool={practice.length ? WORDS.filter(w => practice.includes(w.base)) : WORDS}
+            onPracticeReady={(mist) => setPractice(mist)}
+          />
+
+          <SelfTests />
+        </main>
+
+        <footer className="mt-10 text-sm text-slate-500">
+          <div>Words covered: strong, big, tall, clever, funny, careful, boring, interesting, loud, quiet.</div>
+          <div className="mt-1">Visual feedback (colors, confetti) and audio cues (tones) play on each action. Works fully offline.</div>
+        </footer>
+      </div>
+    </div>
+  );
+}
