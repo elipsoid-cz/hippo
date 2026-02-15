@@ -152,7 +152,7 @@
                             Mandatory, Excellent, Forbidden, Couldn't
                         </div>
                         <div class="card-meta">
-                            <span class="badge badge-new">NEW</span>
+                            <span class="badge badge-new" data-date="2025-02-16">NEW</span>
                             <span class="badge badge-date">📅 Feb 16, 2025</span>
                         </div>
                     </a>
@@ -192,5 +192,21 @@
                 </div>
             </div>
         </div>
+        <script>
+            // Auto-hide NEW badges after 7 days
+            document.addEventListener('DOMContentLoaded', function() {
+                const newBadges = document.querySelectorAll('.badge-new[data-date]');
+                const now = new Date();
+
+                newBadges.forEach(badge => {
+                    const itemDate = new Date(badge.dataset.date);
+                    const daysDiff = Math.floor((now - itemDate) / (1000 * 60 * 60 * 24));
+
+                    if (daysDiff > 7) {
+                        badge.style.display = 'none';
+                    }
+                });
+            });
+        </script>
     </body>
 </html>
