@@ -141,7 +141,7 @@ var SPELLING_BEE_SETS = {
             "science": "věda",
             "hump": "hrb",
             "success": "úspěch",
-            "symbol": "symbol",
+            "symbol": "znak",
             "physical": "fyzický / tělesný",
             "dictionary": "slovník",
             "scissors": "nůžky",
