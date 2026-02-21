@@ -12,6 +12,7 @@ var SpellingBeeEngine = (function () {
         maxAttempts: 3,
         masteryThreshold: 3,
         wordsPerRound: 0, // 0 = use all words; >0 = pick N words per round (tournament mode)
+        translations: {}, // optional: lowercase word -> Czech translation
     };
 
     // --- Internal State ---
@@ -54,6 +55,15 @@ var SpellingBeeEngine = (function () {
         dom.retryMistakesBtn = document.getElementById("retry-mistakes-btn");
         dom.playAgainBtn = document.getElementById("play-again-btn");
         dom.mistakePills = document.getElementById("mistake-pills");
+
+        // Create translation display element if not already in HTML
+        dom.translationDisplay = document.getElementById("translation-display");
+        if (!dom.translationDisplay) {
+            dom.translationDisplay = document.createElement("div");
+            dom.translationDisplay.id = "translation-display";
+            var inputEl = document.getElementById("user-input");
+            inputEl.parentNode.insertBefore(dom.translationDisplay, inputEl);
+        }
     }
 
     // =====================
@@ -501,7 +511,14 @@ var SpellingBeeEngine = (function () {
         hide(dom.nextBtn);
         updateScoreBar();
         updateProgressBar();
-        speak(state.currentWords[state.currentIndex], false);
+
+        var currentWord = state.currentWords[state.currentIndex];
+        if (dom.translationDisplay) {
+            var translation = config.translations[currentWord.toLowerCase()];
+            dom.translationDisplay.textContent = translation || "";
+        }
+
+        speak(currentWord, false);
     }
 
     function checkWord() {

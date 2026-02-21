@@ -81,6 +81,15 @@ h1 {
     background: #d5dbdb;
 }
 
+/* --- Translation Display --- */
+#translation-display {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    font-style: italic;
+    margin-bottom: 0.8rem;
+    min-height: 1.5rem;
+}
+
 /* --- Input --- */
 input {
     padding: 15px;

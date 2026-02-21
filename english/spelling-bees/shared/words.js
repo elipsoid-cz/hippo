@@ -19,6 +19,18 @@ var SPELLING_BEE_SETS = {
             "Curtain",
             "Feather",
         ],
+        translations: {
+            "threw": "hodil/a",
+            "wrote": "napsal/a",
+            "knew": "věděl/a",
+            "tourist": "turista",
+            "smooth": "hladký",
+            "light": "světlo / lehký",
+            "rubber": "guma",
+            "mirror": "zrcadlo",
+            "curtain": "záclona",
+            "feather": "péro / peří",
+        },
     },
     "2025-02-02": {
         title: "February 2",
@@ -36,6 +48,18 @@ var SPELLING_BEE_SETS = {
             "Should",
             "Design",
         ],
+        translations: {
+            "fluffy": "nadýchaný / chlupatý",
+            "bumpy": "hrbolatý",
+            "stomach ache": "bolest břicha",
+            "temperature": "teplota",
+            "sore throat": "bolest v krku",
+            "mountain": "hora",
+            "rough": "drsný / hrubý",
+            "curtain": "záclona",
+            "should": "měl/a by",
+            "design": "design / vzor",
+        },
     },
     "2025-02-09": {
         title: "February 9",
@@ -53,6 +77,18 @@ var SPELLING_BEE_SETS = {
             "Crown",
             "Property",
         ],
+        translations: {
+            "of course": "samozřejmě",
+            "comical": "komický",
+            "myth": "mýtus",
+            "labyrinth": "labyrint / bludiště",
+            "exciting": "vzrušující / napínavý",
+            "instruction": "instrukce / návod",
+            "should": "měl/a by",
+            "ancient": "starověký / dávný",
+            "crown": "koruna",
+            "property": "vlastnost / majetek",
+        },
     },
     "2025-02-16": {
         title: "February 16",
@@ -70,6 +106,18 @@ var SPELLING_BEE_SETS = {
             "Forbidden",
             "Couldn't",
         ],
+        translations: {
+            "suggestion": "návrh / tip",
+            "optional": "volitelný / nepovinný",
+            "choice": "volba / výběr",
+            "mustn't": "nesmí / nesmíš",
+            "allow": "dovolit / povolit",
+            "obligation": "povinnost",
+            "mandatory": "povinný / závazný",
+            "excellent": "výborný / skvělý",
+            "forbidden": "zakázaný",
+            "couldn't": "nemohl/a",
+        },
     },
     "2025-02-23": {
         title: "February 23",
@@ -87,6 +135,18 @@ var SPELLING_BEE_SETS = {
             "Scissors",
             "Miles",
         ],
+        translations: {
+            "project": "projekt",
+            "group": "skupina",
+            "science": "věda",
+            "hump": "hrb",
+            "success": "úspěch",
+            "symbol": "symbol",
+            "physical": "fyzický / tělesný",
+            "dictionary": "slovník",
+            "scissors": "nůžky",
+            "miles": "míle",
+        },
     },
 };
 
@@ -107,6 +167,25 @@ function getAllSpellingBeeWords() {
         }
     }
     return all;
+}
+
+// Merge translations from all sets (for tournament mode).
+// Later sets overwrite earlier ones for duplicate words (same translation anyway).
+function getAllTranslations() {
+    var merged = {};
+    for (var key in SPELLING_BEE_SETS) {
+        if (SPELLING_BEE_SETS.hasOwnProperty(key)) {
+            var t = SPELLING_BEE_SETS[key].translations;
+            if (t) {
+                for (var word in t) {
+                    if (t.hasOwnProperty(word)) {
+                        merged[word] = t[word];
+                    }
+                }
+            }
+        }
+    }
+    return merged;
 }
 
 // Get words for a specific set by ID.
