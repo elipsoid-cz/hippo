@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Spelling Bee Tournament</title>
+        <title>Spelling Bee - February 23</title>
         <link rel="icon" type="image/png" sizes="32x32" href="../../../favicon.ico" />
         <link rel="icon" type="image/png" sizes="16x16" href="../../../favicon-16.png" />
         <link rel="stylesheet" href="../shared/styles.css" />
@@ -83,15 +83,14 @@
         <script src="../shared/engine.js"></script>
         <script>
             (function () {
-                var allWords = getAllSpellingBeeWords();
-                var setCount = Object.keys(SPELLING_BEE_SETS).length;
+                var SET_ID = "2025-02-23";
+                var set = getSpellingBeeSet(SET_ID);
                 SpellingBeeEngine.init({
-                    words: allWords,
-                    setId: "tournament",
-                    title: "Spelling Bee Tournament",
-                    icon: "\uD83C\uDFC6",
-                    description: allWords.length + " words from " + setCount + " sets · 10 per round",
-                    wordsPerRound: 10,
+                    words: set.words,
+                    setId: SET_ID,
+                    title: set.title,
+                    icon: "\uD83D\uDC1D",
+                    description: set.description,
                 });
             })();
         </script>

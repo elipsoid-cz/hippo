@@ -3,6 +3,23 @@
 // The tournament module will automatically include new words.
 
 var SPELLING_BEE_SETS = {
+    "2025-01-26": {
+        title: "January 26",
+        date: "2025-01-26",
+        description: "Irregular verbs and everyday objects",
+        words: [
+            "Threw",
+            "Wrote",
+            "Knew",
+            "Tourist",
+            "Smooth",
+            "Light",
+            "Rubber",
+            "Mirror",
+            "Curtain",
+            "Feather",
+        ],
+    },
     "2025-02-02": {
         title: "February 2",
         date: "2025-02-02",
@@ -52,6 +69,23 @@ var SPELLING_BEE_SETS = {
             "Excellent",
             "Forbidden",
             "Couldn't",
+        ],
+    },
+    "2025-02-23": {
+        title: "February 23",
+        date: "2025-02-23",
+        description: "Science and everyday words",
+        words: [
+            "Project",
+            "Group",
+            "Science",
+            "Hump",
+            "Success",
+            "Symbol",
+            "Physical",
+            "Dictionary",
+            "Scissors",
+            "Miles",
         ],
     },
 };

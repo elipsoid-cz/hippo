@@ -11,6 +11,7 @@ var SpellingBeeEngine = (function () {
         description: "Listen and spell.",
         maxAttempts: 3,
         masteryThreshold: 3,
+        wordsPerRound: 0, // 0 = use all words; >0 = pick N words per round (tournament mode)
     };
 
     // --- Internal State ---
@@ -422,6 +423,27 @@ var SpellingBeeEngine = (function () {
             .replace(/[\u2018\u2019\u0060\u2032]/g, "'");
     }
 
+    // Pick N words for a tournament round: mistake words first, rest random.
+    function selectWordsForRound(wordList) {
+        if (config.wordsPerRound <= 0 || wordList.length <= config.wordsPerRound) {
+            return shuffle(wordList);
+        }
+        var mistakes = getMistakeWords().filter(function (w) {
+            return wordList.indexOf(w) !== -1;
+        });
+        var mistakeSet = {};
+        mistakes.forEach(function (w) { mistakeSet[w.toLowerCase()] = true; });
+        var nonMistakes = wordList.filter(function (w) {
+            return !mistakeSet[w.toLowerCase()];
+        });
+        var chosen = shuffle(mistakes).slice(0, config.wordsPerRound);
+        var remaining = config.wordsPerRound - chosen.length;
+        if (remaining > 0) {
+            chosen = chosen.concat(shuffle(nonMistakes).slice(0, remaining));
+        }
+        return shuffle(chosen);
+    }
+
     function shuffle(array) {
         var arr = array.slice();
         for (var i = arr.length - 1; i > 0; i--) {
@@ -445,7 +467,9 @@ var SpellingBeeEngine = (function () {
     // =====================
 
     function startGame(wordList, mode) {
-        state.currentWords = shuffle(wordList);
+        state.currentWords = (mode === "all" && config.wordsPerRound > 0)
+            ? selectWordsForRound(wordList)
+            : shuffle(wordList);
         state.currentIndex = 0;
         state.score = 0;
         state.streak = 0;
@@ -552,7 +576,7 @@ var SpellingBeeEngine = (function () {
                 word +
                 "</strong></div>";
             show(dom.nextBtn);
-            dom.nextBtn.focus();
+            setTimeout(function () { dom.nextBtn.focus(); }, 50);
             updateScoreBar();
         } else {
             // WRONG but attempts remain
@@ -641,16 +665,18 @@ var SpellingBeeEngine = (function () {
         if (dom.headerIcon) dom.headerIcon.textContent = config.icon;
         if (dom.headerTitle) dom.headerTitle.textContent = config.title;
         if (dom.headerDesc) {
-            dom.headerDesc.textContent =
-                config.description + " (" + config.words.length + " words)";
+            dom.headerDesc.textContent = config.wordsPerRound > 0
+                ? config.description
+                : config.description + " (" + config.words.length + " words)";
         }
 
         var mistakeWords = getMistakeWords();
         if (mistakeWords.length > 0) {
             // Show mode selection
             if (dom.startAllBtn) {
-                dom.startAllBtn.textContent =
-                    "All Words (" + config.words.length + ")";
+                dom.startAllBtn.textContent = config.wordsPerRound > 0
+                    ? "All Words (" + config.wordsPerRound + " per round)"
+                    : "All Words (" + config.words.length + ")";
             }
             if (dom.startMistakesBtn) {
                 show(dom.startMistakesBtn);
@@ -671,7 +697,9 @@ var SpellingBeeEngine = (function () {
             }
         } else {
             if (dom.startAllBtn) {
-                dom.startAllBtn.textContent = "START";
+                dom.startAllBtn.textContent = config.wordsPerRound > 0
+                    ? "START (" + config.wordsPerRound + " words)"
+                    : "START";
             }
             if (dom.startMistakesBtn) hide(dom.startMistakesBtn);
             if (dom.mistakePills) hide(dom.mistakePills);
