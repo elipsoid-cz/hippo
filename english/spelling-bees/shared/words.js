@@ -90,6 +90,13 @@ var SPELLING_BEE_SETS = {
     },
 };
 
+// Phonetic overrides for TTS only.
+// Use when the default pronunciation is wrong.
+// Keys are lowercase, values are alternative spellings passed to speech synthesis.
+var PHONETIC_OVERRIDES = {
+    "sore throat": "sore throht",
+};
+
 // Get all unique words across all sets (for tournament mode).
 // Deduplicates by lowercase comparison (e.g. "Should" appears in set1 and set2).
 function getAllSpellingBeeWords() {
