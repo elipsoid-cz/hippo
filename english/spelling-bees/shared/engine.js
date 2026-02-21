@@ -185,7 +185,7 @@ var SpellingBeeEngine = (function () {
         var msg = new SpeechSynthesisUtterance();
         msg.text = text;
         msg.lang = "en-US";
-        msg.rate = slow ? 0.4 : 0.85;
+        msg.rate = slow ? 0.2 : 0.85;
         if (preferredVoice) {
             msg.voice = preferredVoice;
         }
