@@ -170,18 +170,10 @@ var SpellingBeeEngine = (function () {
         }
     }
 
-    function getPhonetic(word) {
-        if (typeof PHONETIC_OVERRIDES !== "undefined") {
-            var override = PHONETIC_OVERRIDES[word.toLowerCase()];
-            if (override) return override;
-        }
-        return word;
-    }
-
     function speak(text, slow) {
         window.speechSynthesis.cancel();
         var msg = new SpeechSynthesisUtterance();
-        msg.text = getPhonetic(text);
+        msg.text = text;
         msg.lang = "en-US";
         msg.rate = slow ? 0.4 : 0.85;
         if (preferredVoice) {
