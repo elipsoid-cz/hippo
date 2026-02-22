@@ -283,10 +283,9 @@ var SpellingBeeEngine = (function () {
             '<button id="save-score-btn" class="btn-save-score">Save</button>' +
             '</div>';
 
-        // Insert before buttons
-        var insertBefore = dom.retryMistakesBtn || dom.playAgainBtn;
-        if (insertBefore) {
-            dom.finalScreen.insertBefore(panel, insertBefore);
+        // Insert before Play Again button
+        if (dom.playAgainBtn) {
+            dom.finalScreen.insertBefore(panel, dom.playAgainBtn);
         } else {
             dom.finalScreen.appendChild(panel);
         }
@@ -363,9 +362,8 @@ var SpellingBeeEngine = (function () {
             container.appendChild(row);
         }
 
-        var insertBefore = dom.retryMistakesBtn || dom.playAgainBtn;
-        if (insertBefore) {
-            dom.finalScreen.insertBefore(container, insertBefore);
+        if (dom.playAgainBtn) {
+            dom.finalScreen.insertBefore(container, dom.playAgainBtn);
         } else {
             dom.finalScreen.appendChild(container);
         }
