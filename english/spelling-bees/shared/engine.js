@@ -319,14 +319,10 @@ var SpellingBeeEngine = (function () {
         });
     }
 
-    function renderLeaderboard(entries, currentNickname) {
-        var existing = document.getElementById("leaderboard-container");
-        if (existing) existing.remove();
-
-        if (!entries || entries.length === 0) return;
+    function buildLeaderboardElement(entries, currentNickname) {
+        if (!entries || entries.length === 0) return null;
 
         var container = document.createElement("div");
-        container.id = "leaderboard-container";
         container.className = "leaderboard-container";
 
         var title = document.createElement("div");
@@ -362,11 +358,33 @@ var SpellingBeeEngine = (function () {
             container.appendChild(row);
         }
 
+        return container;
+    }
+
+    function renderLeaderboard(entries, currentNickname) {
+        // Remove any existing leaderboard on final screen
+        var existing = dom.finalScreen.querySelector(".leaderboard-container");
+        if (existing) existing.remove();
+
+        var el = buildLeaderboardElement(entries, currentNickname);
+        if (!el) return;
+
         if (dom.playAgainBtn) {
-            dom.finalScreen.insertBefore(container, dom.playAgainBtn);
+            dom.finalScreen.insertBefore(el, dom.playAgainBtn);
         } else {
-            dom.finalScreen.appendChild(container);
+            dom.finalScreen.appendChild(el);
         }
+    }
+
+    function renderWelcomeLeaderboard(entries) {
+        // Remove any existing leaderboard on welcome screen
+        var existing = dom.welcomeScreen.querySelector(".leaderboard-container");
+        if (existing) existing.remove();
+
+        var el = buildLeaderboardElement(entries, loadNickname());
+        if (!el) return;
+
+        dom.welcomeScreen.appendChild(el);
     }
 
     function showExistingLeaderboard() {
@@ -374,6 +392,15 @@ var SpellingBeeEngine = (function () {
         loadLeaderboard(function (entries) {
             if (entries.length > 0) {
                 renderLeaderboard(entries, loadNickname());
+            }
+        });
+    }
+
+    function showWelcomeLeaderboard() {
+        if (!firebaseReady) return;
+        loadLeaderboard(function (entries) {
+            if (entries.length > 0) {
+                renderWelcomeLeaderboard(entries);
             }
         });
     }
@@ -1012,6 +1039,7 @@ var SpellingBeeEngine = (function () {
                 hide(dom.finalScreen);
                 show(dom.welcomeScreen);
                 setupWelcomeScreen();
+                showWelcomeLeaderboard();
             });
         }
 
@@ -1046,7 +1074,9 @@ var SpellingBeeEngine = (function () {
             setupWelcomeScreen();
             bindEvents();
             // Load Firebase SDK in background for leaderboard
-            loadFirebaseSDK();
+            loadFirebaseSDK(function () {
+                showWelcomeLeaderboard();
+            });
         },
     };
 })();
