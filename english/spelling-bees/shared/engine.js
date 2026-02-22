@@ -23,6 +23,7 @@ var SpellingBeeEngine = (function () {
         attempt: 0,
         streak: 0,
         bestStreak: 0,
+        totalAttempts: 0,
         sessionMistakes: [],
         isReviewingError: false,
         mode: "all",
@@ -199,38 +200,37 @@ var SpellingBeeEngine = (function () {
         var key = nickname.toLowerCase().trim();
         var docRef = getScoreDocRef(key);
 
+        var newData = {
+            nickname: nickname.trim(),
+            score: state.score,
+            total: state.currentWords.length,
+            totalAttempts: state.totalAttempts,
+            bestStreak: state.bestStreak,
+            date: new Date().toISOString()
+        };
+
         docRef.get().then(function (doc) {
-            var newPct = state.score / state.currentWords.length;
             if (doc.exists) {
                 var existing = doc.data();
+                var newPct = state.score / state.currentWords.length;
                 var oldPct = existing.score / existing.total;
+                var oldAttempts = existing.totalAttempts || Infinity;
+                // Better = higher %, or same % with fewer attempts, or same both with higher streak
                 var dominated = newPct > oldPct ||
-                    (newPct === oldPct && state.bestStreak > existing.bestStreak);
+                    (newPct === oldPct && state.totalAttempts < oldAttempts) ||
+                    (newPct === oldPct && state.totalAttempts === oldAttempts && state.bestStreak > (existing.bestStreak || 0));
                 if (!dominated) {
                     if (callback) callback();
                     return;
                 }
             }
-            docRef.set({
-                nickname: nickname.trim(),
-                score: state.score,
-                total: state.currentWords.length,
-                bestStreak: state.bestStreak,
-                date: new Date().toISOString()
-            }).then(function () {
+            docRef.set(newData).then(function () {
                 if (callback) callback();
             }).catch(function () {
                 if (callback) callback();
             });
         }).catch(function () {
-            // On read error, try to write anyway
-            docRef.set({
-                nickname: nickname.trim(),
-                score: state.score,
-                total: state.currentWords.length,
-                bestStreak: state.bestStreak,
-                date: new Date().toISOString()
-            }).then(function () {
+            docRef.set(newData).then(function () {
                 if (callback) callback();
             }).catch(function () {
                 if (callback) callback();
@@ -255,7 +255,10 @@ var SpellingBeeEngine = (function () {
                     var pctA = a.score / a.total;
                     var pctB = b.score / b.total;
                     if (pctB !== pctA) return pctB - pctA;
-                    if (b.bestStreak !== a.bestStreak) return b.bestStreak - a.bestStreak;
+                    var attA = a.totalAttempts || Infinity;
+                    var attB = b.totalAttempts || Infinity;
+                    if (attA !== attB) return attA - attB;
+                    if ((b.bestStreak || 0) !== (a.bestStreak || 0)) return (b.bestStreak || 0) - (a.bestStreak || 0);
                     return new Date(a.date) - new Date(b.date);
                 });
                 callback(entries);
@@ -320,8 +323,6 @@ var SpellingBeeEngine = (function () {
     }
 
     function buildLeaderboardElement(entries, currentNickname) {
-        if (!entries || entries.length === 0) return null;
-
         var container = document.createElement("div");
         container.className = "leaderboard-container";
 
@@ -329,6 +330,14 @@ var SpellingBeeEngine = (function () {
         title.className = "leaderboard-title";
         title.textContent = "\uD83C\uDFC6 Leaderboard";
         container.appendChild(title);
+
+        if (!entries || entries.length === 0) {
+            var empty = document.createElement("div");
+            empty.className = "leaderboard-empty";
+            empty.textContent = "No scores yet \u2014 be the first!";
+            container.appendChild(empty);
+            return container;
+        }
 
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
         var maxDisplay = 5;
@@ -362,13 +371,10 @@ var SpellingBeeEngine = (function () {
     }
 
     function renderLeaderboard(entries, currentNickname) {
-        // Remove any existing leaderboard on final screen
         var existing = dom.finalScreen.querySelector(".leaderboard-container");
         if (existing) existing.remove();
 
         var el = buildLeaderboardElement(entries, currentNickname);
-        if (!el) return;
-
         if (dom.playAgainBtn) {
             dom.finalScreen.insertBefore(el, dom.playAgainBtn);
         } else {
@@ -377,31 +383,24 @@ var SpellingBeeEngine = (function () {
     }
 
     function renderWelcomeLeaderboard(entries) {
-        // Remove any existing leaderboard on welcome screen
         var existing = dom.welcomeScreen.querySelector(".leaderboard-container");
         if (existing) existing.remove();
 
         var el = buildLeaderboardElement(entries, loadNickname());
-        if (!el) return;
-
         dom.welcomeScreen.appendChild(el);
     }
 
     function showExistingLeaderboard() {
         if (!firebaseReady) return;
         loadLeaderboard(function (entries) {
-            if (entries.length > 0) {
-                renderLeaderboard(entries, loadNickname());
-            }
+            renderLeaderboard(entries, loadNickname());
         });
     }
 
     function showWelcomeLeaderboard() {
         if (!firebaseReady) return;
         loadLeaderboard(function (entries) {
-            if (entries.length > 0) {
-                renderWelcomeLeaderboard(entries);
-            }
+            renderWelcomeLeaderboard(entries);
         });
     }
 
@@ -748,6 +747,7 @@ var SpellingBeeEngine = (function () {
         state.score = 0;
         state.streak = 0;
         state.bestStreak = 0;
+        state.totalAttempts = 0;
         state.sessionMistakes = [];
         state.mode = mode || "all";
 
@@ -791,6 +791,7 @@ var SpellingBeeEngine = (function () {
         if (input === "") return;
 
         state.attempt++;
+        state.totalAttempts++;
 
         if (input === correct) {
             // CORRECT

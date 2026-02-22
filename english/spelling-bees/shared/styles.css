@@ -499,6 +499,13 @@ input:read-only {
     margin-bottom: 10px;
 }
 
+.leaderboard-empty {
+    color: #999;
+    font-size: 0.95rem;
+    padding: 8px 0;
+    text-align: center;
+}
+
 .leaderboard-row {
     display: flex;
     align-items: center;
