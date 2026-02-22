@@ -916,9 +916,11 @@ var SpellingBeeEngine = (function () {
             hide(dom.retryMistakesBtn);
         }
 
-        // Leaderboard
-        renderSavePanel();
-        showExistingLeaderboard();
+        // Leaderboard (only for normal game, not Practice Mistakes)
+        if (state.mode === "all") {
+            renderSavePanel();
+            showExistingLeaderboard();
+        }
     }
 
     function updateScoreBar() {
