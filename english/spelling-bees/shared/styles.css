@@ -484,37 +484,21 @@ input:read-only {
 }
 
 /* --- Leaderboard --- */
-@keyframes leaderboard-appear {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes leaderboard-pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.35; }
-}
-
 .leaderboard-container {
     margin: 1.2rem 0;
     padding: 15px;
     background: #f8f9fa;
     border-radius: 12px;
     border: 2px solid #eee;
-}
-
-.leaderboard-container.is-loading .leaderboard-loading {
-    animation: leaderboard-pulse 1.4s ease-in-out infinite;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.6s ease, opacity 0.4s ease;
 }
 
 .leaderboard-container.is-loaded {
-    animation: leaderboard-appear 0.35s ease;
-}
-
-.leaderboard-loading {
-    color: #bbb;
-    font-size: 0.9rem;
-    padding: 8px 0;
-    text-align: center;
+    max-height: 400px;
+    opacity: 1;
 }
 
 .leaderboard-title {

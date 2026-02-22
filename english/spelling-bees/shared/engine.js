@@ -382,37 +382,17 @@ var SpellingBeeEngine = (function () {
         }
     }
 
-    function renderWelcomeLeaderboardSkeleton() {
-        var existing = dom.welcomeScreen.querySelector(".leaderboard-container");
-        if (existing) return; // already rendered
-
-        var container = document.createElement("div");
-        container.className = "leaderboard-container is-loading";
-
-        var title = document.createElement("div");
-        title.className = "leaderboard-title";
-        title.textContent = "\uD83C\uDFC6 Leaderboard";
-        container.appendChild(title);
-
-        var loading = document.createElement("div");
-        loading.className = "leaderboard-loading";
-        loading.textContent = "Loading\u2026";
-        container.appendChild(loading);
-
-        dom.welcomeScreen.appendChild(container);
-    }
-
     function renderWelcomeLeaderboard(entries) {
-        var container = dom.welcomeScreen.querySelector(".leaderboard-container");
+        var existing = dom.welcomeScreen.querySelector(".leaderboard-container");
+        if (existing) existing.remove();
 
         var el = buildLeaderboardElement(entries, loadNickname());
-        el.classList.add("is-loaded");
-
-        if (container) {
-            container.replaceWith(el);
-        } else {
-            dom.welcomeScreen.appendChild(el);
-        }
+        dom.welcomeScreen.appendChild(el);
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                el.classList.add("is-loaded");
+            });
+        });
     }
 
     function showExistingLeaderboard() {
@@ -1018,7 +998,6 @@ var SpellingBeeEngine = (function () {
             if (dom.mistakePills) hide(dom.mistakePills);
         }
 
-        renderWelcomeLeaderboardSkeleton();
     }
 
     // =====================
