@@ -408,3 +408,139 @@ input:read-only {
         opacity: 0;
     }
 }
+
+/* --- Save Score Panel --- */
+.save-score-panel {
+    margin: 1.2rem 0;
+    padding: 15px;
+    background: #f0f7ff;
+    border-radius: 12px;
+    border: 2px solid #d0e3ff;
+}
+
+.save-score-title {
+    font-size: 0.95rem;
+    color: #7f8c8d;
+    margin-bottom: 8px;
+}
+
+.save-score-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nickname-input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.2s;
+    min-width: 0;
+}
+
+.nickname-input:focus {
+    border-color: var(--primary);
+}
+
+.nickname-error {
+    border-color: var(--error) !important;
+    animation: nicknameShake 0.4s ease;
+}
+
+@keyframes nicknameShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+.btn-save-score {
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    background: var(--primary);
+    color: var(--secondary);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-save-score:hover {
+    background: #f39c12;
+    transform: translateY(-1px);
+}
+
+.btn-save-score:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+}
+
+/* --- Leaderboard --- */
+.leaderboard-container {
+    margin: 1.2rem 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #eee;
+}
+
+.leaderboard-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--secondary);
+    margin-bottom: 10px;
+}
+
+.leaderboard-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    margin-bottom: 4px;
+}
+
+.leaderboard-row:last-child {
+    margin-bottom: 0;
+}
+
+.leaderboard-current {
+    background: #fff9e6;
+    border: 2px solid var(--primary);
+}
+
+.lb-rank {
+    width: 2em;
+    text-align: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.lb-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--secondary);
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lb-score {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.lb-streak {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}

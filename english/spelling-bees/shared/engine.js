@@ -142,6 +142,245 @@ var SpellingBeeEngine = (function () {
     }
 
     // =====================
+    // Leaderboard (Firebase)
+    // =====================
+
+    var firebaseReady = false;
+    var db = null;
+
+    function loadFirebaseSDK(callback) {
+        if (typeof FIREBASE_CONFIG === "undefined" || !FIREBASE_CONFIG) return;
+        if (window.firebase && window.firebase.firestore) {
+            if (!db) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+            }
+            firebaseReady = true;
+            if (callback) callback();
+            return;
+        }
+        var s1 = document.createElement("script");
+        s1.src = "https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js";
+        s1.onload = function () {
+            var s2 = document.createElement("script");
+            s2.src = "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js";
+            s2.onload = function () {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                firebaseReady = true;
+                if (callback) callback();
+            };
+            document.head.appendChild(s2);
+        };
+        document.head.appendChild(s1);
+    }
+
+    function loadNickname() {
+        try {
+            return localStorage.getItem("hippo-player-nickname") || "";
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function saveNickname(name) {
+        try {
+            localStorage.setItem("hippo-player-nickname", name);
+        } catch (e) { /* ignore */ }
+    }
+
+    function getScoreDocRef(nicknameKey) {
+        return db.collection("leaderboards").doc(config.setId)
+            .collection("scores").doc(nicknameKey);
+    }
+
+    function saveScore(nickname, callback) {
+        if (!db || !nickname) { if (callback) callback(); return; }
+        var key = nickname.toLowerCase().trim();
+        var docRef = getScoreDocRef(key);
+
+        docRef.get().then(function (doc) {
+            var newPct = state.score / state.currentWords.length;
+            if (doc.exists) {
+                var existing = doc.data();
+                var oldPct = existing.score / existing.total;
+                var dominated = newPct > oldPct ||
+                    (newPct === oldPct && state.bestStreak > existing.bestStreak);
+                if (!dominated) {
+                    if (callback) callback();
+                    return;
+                }
+            }
+            docRef.set({
+                nickname: nickname.trim(),
+                score: state.score,
+                total: state.currentWords.length,
+                bestStreak: state.bestStreak,
+                date: new Date().toISOString()
+            }).then(function () {
+                if (callback) callback();
+            }).catch(function () {
+                if (callback) callback();
+            });
+        }).catch(function () {
+            // On read error, try to write anyway
+            docRef.set({
+                nickname: nickname.trim(),
+                score: state.score,
+                total: state.currentWords.length,
+                bestStreak: state.bestStreak,
+                date: new Date().toISOString()
+            }).then(function () {
+                if (callback) callback();
+            }).catch(function () {
+                if (callback) callback();
+            });
+        });
+    }
+
+    function loadLeaderboard(callback) {
+        if (!db) { callback([]); return; }
+        db.collection("leaderboards").doc(config.setId)
+            .collection("scores")
+            .orderBy("score", "desc")
+            .limit(10)
+            .get()
+            .then(function (snapshot) {
+                var entries = [];
+                snapshot.forEach(function (doc) {
+                    entries.push(doc.data());
+                });
+                // Client-side sort for tiebreakers
+                entries.sort(function (a, b) {
+                    var pctA = a.score / a.total;
+                    var pctB = b.score / b.total;
+                    if (pctB !== pctA) return pctB - pctA;
+                    if (b.bestStreak !== a.bestStreak) return b.bestStreak - a.bestStreak;
+                    return new Date(a.date) - new Date(b.date);
+                });
+                callback(entries);
+            })
+            .catch(function () {
+                callback([]);
+            });
+    }
+
+    function renderSavePanel() {
+        var existing = document.getElementById("save-score-panel");
+        if (existing) existing.remove();
+
+        if (state.score <= 0 || !firebaseReady) return;
+
+        var panel = document.createElement("div");
+        panel.id = "save-score-panel";
+        panel.className = "save-score-panel";
+        panel.innerHTML =
+            '<div class="save-score-title">Save your score?</div>' +
+            '<div class="save-score-row">' +
+            '<input type="text" id="nickname-input" class="nickname-input" ' +
+            'placeholder="Your name..." maxlength="15" autocomplete="off" ' +
+            'value="' + loadNickname().replace(/"/g, '&quot;') + '" />' +
+            '<button id="save-score-btn" class="btn-save-score">Save</button>' +
+            '</div>';
+
+        // Insert before buttons
+        var insertBefore = dom.retryMistakesBtn || dom.playAgainBtn;
+        if (insertBefore) {
+            dom.finalScreen.insertBefore(panel, insertBefore);
+        } else {
+            dom.finalScreen.appendChild(panel);
+        }
+
+        var input = document.getElementById("nickname-input");
+        var btn = document.getElementById("save-score-btn");
+
+        btn.addEventListener("click", function () {
+            var nick = input.value.trim();
+            if (!nick) {
+                input.classList.add("nickname-error");
+                input.focus();
+                setTimeout(function () {
+                    input.classList.remove("nickname-error");
+                }, 600);
+                return;
+            }
+            saveNickname(nick);
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+            saveScore(nick, function () {
+                panel.remove();
+                loadLeaderboard(function (entries) {
+                    renderLeaderboard(entries, nick);
+                });
+            });
+        });
+
+        input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") btn.click();
+        });
+    }
+
+    function renderLeaderboard(entries, currentNickname) {
+        var existing = document.getElementById("leaderboard-container");
+        if (existing) existing.remove();
+
+        if (!entries || entries.length === 0) return;
+
+        var container = document.createElement("div");
+        container.id = "leaderboard-container";
+        container.className = "leaderboard-container";
+
+        var title = document.createElement("div");
+        title.className = "leaderboard-title";
+        title.textContent = "\uD83C\uDFC6 Leaderboard";
+        container.appendChild(title);
+
+        var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
+        var maxDisplay = 5;
+
+        for (var i = 0; i < Math.min(entries.length, maxDisplay); i++) {
+            var entry = entries[i];
+            var row = document.createElement("div");
+            row.className = "leaderboard-row";
+
+            if (currentNickname &&
+                entry.nickname.toLowerCase().trim() === currentNickname.toLowerCase().trim()) {
+                row.classList.add("leaderboard-current");
+            }
+
+            var rank = i < 3 ? medalEmoji[i] : (i + 1) + ".";
+            var pct = Math.round((entry.score / entry.total) * 100);
+            var streakHtml = entry.bestStreak >= 3
+                ? '<span class="lb-streak">\uD83D\uDD25' + entry.bestStreak + '</span>'
+                : '';
+
+            row.innerHTML =
+                '<span class="lb-rank">' + rank + '</span>' +
+                '<span class="lb-name">' + entry.nickname + '</span>' +
+                '<span class="lb-score">' + entry.score + '/' + entry.total +
+                ' (' + pct + '%)</span>' + streakHtml;
+
+            container.appendChild(row);
+        }
+
+        var insertBefore = dom.retryMistakesBtn || dom.playAgainBtn;
+        if (insertBefore) {
+            dom.finalScreen.insertBefore(container, insertBefore);
+        } else {
+            dom.finalScreen.appendChild(container);
+        }
+    }
+
+    function showExistingLeaderboard() {
+        if (!firebaseReady) return;
+        loadLeaderboard(function (entries) {
+            if (entries.length > 0) {
+                renderLeaderboard(entries, loadNickname());
+            }
+        });
+    }
+
+    // =====================
     // Text-to-Speech
     // =====================
 
@@ -650,6 +889,10 @@ var SpellingBeeEngine = (function () {
         } else if (dom.retryMistakesBtn) {
             hide(dom.retryMistakesBtn);
         }
+
+        // Leaderboard
+        renderSavePanel();
+        showExistingLeaderboard();
     }
 
     function updateScoreBar() {
@@ -804,6 +1047,8 @@ var SpellingBeeEngine = (function () {
             }
             setupWelcomeScreen();
             bindEvents();
+            // Load Firebase SDK in background for leaderboard
+            loadFirebaseSDK();
         },
     };
 })();

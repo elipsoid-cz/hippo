@@ -2,6 +2,16 @@
 // To add a new week: add a new entry to SPELLING_BEE_SETS below.
 // The tournament module will automatically include new words.
 
+// Firebase configuration for leaderboard
+var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB-prvqJmm0Jdt4kQAA-f5BQXmaC8VGP44",
+    authDomain: "hippo-cz.firebaseapp.com",
+    projectId: "hippo-cz",
+    storageBucket: "hippo-cz.firebasestorage.app",
+    messagingSenderId: "881228649401",
+    appId: "1:881228649401:web:2d81c97045155687a51c68"
+};
+
 var SPELLING_BEE_SETS = {
     "2025-01-26": {
         title: "January 26",
