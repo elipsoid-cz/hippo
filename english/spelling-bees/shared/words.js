@@ -158,6 +158,35 @@ var SPELLING_BEE_SETS = {
             "miles": "míle",
         },
     },
+    "2025-03-09": {
+        title: "March 9",
+        date: "2025-03-09",
+        description: "Geography, nature and science",
+        words: [
+            "Bridge",
+            "Country",
+            "Height",
+            "Volcano",
+            "Weather",
+            "Language",
+            "Future",
+            "Rainforest",
+            "Chemistry",
+            "Geography",
+        ],
+        translations: {
+            "bridge": "most",
+            "country": "země / venkov",
+            "height": "výška",
+            "volcano": "sopka",
+            "weather": "počasí",
+            "language": "jazyk / řeč",
+            "future": "budoucnost",
+            "rainforest": "deštný prales",
+            "chemistry": "chemie",
+            "geography": "zeměpis",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).

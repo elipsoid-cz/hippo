@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Spelling Bee - March 9</title>
+        <link rel="icon" type="image/png" sizes="32x32" href="../../../favicon.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="../../../favicon-16.png" />
+        <link rel="stylesheet" href="../shared/styles.css" />
+    </head>
+    <body>
+        <div class="breadcrumb">
+            <a href="../../../">← Home</a>
+        </div>
+        <div id="game-container">
+            <div id="header-icon" class="bee-header"></div>
+
+            <div id="welcome-screen">
+                <h1 id="header-title"></h1>
+                <p id="header-desc"></p>
+                <button class="btn-main btn-start" id="start-all-btn">
+                    START
+                </button>
+                <button
+                    class="btn-main btn-mistakes hidden"
+                    id="start-mistakes-btn"
+                ></button>
+                <div id="mistake-pills" class="hidden"></div>
+            </div>
+
+            <div id="game-zone" class="hidden">
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div
+                            id="progress-fill"
+                            class="progress-fill"
+                        ></div>
+                    </div>
+                </div>
+                <div class="audio-buttons">
+                    <button id="audio-btn">🔊</button>
+                    <button id="slow-btn">🐢</button>
+                </div>
+                <input
+                    type="text"
+                    id="user-input"
+                    placeholder="..."
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                />
+                <button id="submit-btn" class="btn-main">
+                    Check (Enter)
+                </button>
+                <button id="next-btn" class="btn-main hidden">
+                    Continue (Enter) ➔
+                </button>
+                <div id="feedback"></div>
+                <div id="score-bar"></div>
+            </div>
+
+            <div id="final-screen" class="hidden">
+                <h1>Results</h1>
+                <p id="final-score" class="final-score-text"></p>
+                <div id="mistakes-container" class="hidden">
+                    <ul id="mistakes-display" class="mistakes-list"></ul>
+                    <button id="retry-mistakes-btn" class="btn-main btn-retry">
+                        Practice Mistakes Only
+                    </button>
+                </div>
+                <button
+                    id="play-again-btn"
+                    class="btn-main"
+                    style="margin-top: 10px"
+                >
+                    Play Again
+                </button>
+            </div>
+        </div>
+
+        <script src="../shared/words.js"></script>
+        <script src="../shared/engine.js"></script>
+        <script>
+            (function () {
+                var SET_ID = "2025-03-09";
+                var set = getSpellingBeeSet(SET_ID);
+                SpellingBeeEngine.init({
+                    words: set.words,
+                    setId: SET_ID,
+                    title: set.title,
+                    icon: "\uD83D\uDC1D",
+                    description: set.description,
+                    translations: set.translations || {},
+                });
+            })();
+        </script>
+    </body>
+</html>
