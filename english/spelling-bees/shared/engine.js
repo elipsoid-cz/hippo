@@ -887,6 +887,10 @@ var SpellingBeeEngine = (function () {
         hide(dom.gameZone);
         show(dom.finalScreen);
 
+        // Remove leftover save panel from a previous All Words game
+        var existingPanel = document.getElementById("save-score-panel");
+        if (existingPanel) existingPanel.remove();
+
         var total = state.currentWords.length;
         var text = "Score: " + state.score + " of " + total;
         if (state.bestStreak >= 3) {
