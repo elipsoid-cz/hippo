@@ -142,18 +142,7 @@
             <div class="section">
                 <h2 class="section-title">🐝 Spelling Bee - English</h2>
                 <div class="cards-grid" id="bee-cards-grid">
-                    <a href="english/spelling-bees/tournament/" class="card">
-                        <div class="card-icon">🏆</div>
-                        <div class="card-title">Spelling Bee Tournament</div>
-                        <div class="card-description" id="tournament-desc">
-                            Master all spelling words from all sets! Smart
-                            hints, mistake tracking, and mastery system.
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date" id="tournament-badge"></span>
-                        </div>
-                    </a>
-                    <!-- Weekly bee cards generated dynamically from words.js -->
+                    <!-- Cards generated dynamically from words.js (weekly sets first, tournament last) -->
                 </div>
             </div>
 
@@ -190,6 +179,10 @@
             </div>
         </div>
 
+        <footer>
+            <small>v1.2.0</small>
+        </footer>
+
         <script src="english/spelling-bees/shared/words.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -223,19 +216,22 @@
                     grid.appendChild(card);
                 });
 
-                // Update tournament card dynamically
+                // Tournament card — last
                 var totalWords = getAllSpellingBeeWords().length;
                 var totalSets = Object.keys(SPELLING_BEE_SETS).length;
-                var descEl = document.getElementById('tournament-desc');
-                var badgeEl = document.getElementById('tournament-badge');
-                if (descEl) {
-                    descEl.textContent =
-                        'Master all ' + totalWords + ' spelling words from Sets 1\u2013' +
-                        totalSets + '! Smart hints, mistake tracking, and mastery system.';
-                }
-                if (badgeEl) {
-                    badgeEl.textContent = totalWords + ' words';
-                }
+                var tournament = document.createElement('a');
+                tournament.href = 'english/spelling-bees/tournament/';
+                tournament.className = 'card';
+                tournament.innerHTML =
+                    '<div class="card-icon">\uD83C\uDFC6</div>' +
+                    '<div class="card-title">Spelling Bee Tournament</div>' +
+                    '<div class="card-description">Master all ' + totalWords +
+                        ' spelling words from Sets 1\u2013' + totalSets +
+                        '! Smart hints, mistake tracking, and mastery system.</div>' +
+                    '<div class="card-meta">' +
+                        '<span class="badge badge-date">' + totalWords + ' words</span>' +
+                    '</div>';
+                grid.appendChild(tournament);
             });
         </script>
     </body>

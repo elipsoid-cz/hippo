@@ -39,7 +39,16 @@ Each exercise should have:
 - `english/spelling-bees/shared/engine.js` - core game logic (IIFE, `SpellingBeeEngine`)
 - `english/spelling-bees/shared/words.js` - word sets + Firebase config
 - `english/spelling-bees/shared/styles.css` - shared styles
-- Each week: `english/spelling-bees/YYYY-MM-DD/index.html` (loads shared engine)
+- `english/spelling-bees/play/index.html` - unified player; čte `?set=YYYY-MM-DD` z URL
+- `english/spelling-bees/YYYY-MM-DD/index.html` - pouze redirect na `../play/?set=YYYY-MM-DD`
+
+### Přidání nového spelling bee setu
+Stačí přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage se zobrazí automaticky, NEW badge se přiřadí nejnovějšímu setu (nejvyšší klíč).
+
+### Architektura karet (index.html)
+- Spelling bee karty jsou generovány dynamicky z `words.js` (JS na konci body)
+- Tournament badge (počet slov, počet setů) se počítá automaticky přes `getAllSpellingBeeWords()`
+- Každý set: popis = `set.description + ': ' + set.words.join(', ')`
 
 ## Leaderboard (Firebase Firestore)
 - **Firebase projekt:** `hippo-cz` (free Spark tier)
@@ -51,4 +60,10 @@ Each exercise should have:
 - **UX:** Nickname prompted on final screen only (not before game), pre-filled from localStorage
 - **Display:** Leaderboard visible on both welcome and final screens; empty state shows "No scores yet — be the first!"
 - **Practice Mistakes:** Leaderboard hidden and scores not saved in Practice Mistakes mode (`state.mode !== "all"`)
+- **Bug (opraveno):** Save panel z předchozí All Words hry zůstával v DOM a byl znovu viditelný po Practice Mistakes → `showFinal()` nyní vždy odstraní starý panel na začátku
 - **Security:** Firebase API key is intentionally public; security enforced by Firestore rules; key restricted to `elipsoid-cz.github.io/*`
+
+## Verze (footer v index.html)
+- Formát: `vX.Y.Z` — major.minor.patch
+- Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
+- Aktuální verze: **v1.2.0**
