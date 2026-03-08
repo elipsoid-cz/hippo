@@ -141,91 +141,19 @@
 
             <div class="section">
                 <h2 class="section-title">🐝 Spelling Bee - English</h2>
-                <div class="cards-grid">
+                <div class="cards-grid" id="bee-cards-grid">
                     <a href="english/spelling-bees/tournament/" class="card">
                         <div class="card-icon">🏆</div>
                         <div class="card-title">Spelling Bee Tournament</div>
-                        <div class="card-description">
-                            Master all 58 spelling words from Sets 1-6! Smart
+                        <div class="card-description" id="tournament-desc">
+                            Master all spelling words from all sets! Smart
                             hints, mistake tracking, and mastery system.
                         </div>
                         <div class="card-meta">
-                            <span class="badge badge-date">58 words</span>
+                            <span class="badge badge-date" id="tournament-badge"></span>
                         </div>
                     </a>
-                    <a href="english/spelling-bees/2025-03-09/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">March 9</div>
-                        <div class="card-description">
-                            Geography, nature and science: Bridge, Country,
-                            Height, Volcano, Weather, Language, Future,
-                            Rainforest, Chemistry, Geography
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-new" data-date="2026-03-09">NEW</span>
-                            <span class="badge badge-date">📅 Mar 9, 2025</span>
-                        </div>
-                    </a>
-                    <a href="english/spelling-bees/2025-02-23/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">February 23</div>
-                        <div class="card-description">
-                            Science and everyday words: Project, Group, Science,
-                            Hump, Success, Symbol, Physical, Dictionary,
-                            Scissors, Miles
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date">📅 Feb 23, 2025</span>
-                        </div>
-                    </a>
-                    <a href="english/spelling-bees/2025-02-16/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">February 16</div>
-                        <div class="card-description">
-                            Obligation and permission: Suggestion, Optional,
-                            Choice, Mustn't, Allow, Obligation, Mandatory,
-                            Excellent, Forbidden, Couldn't
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date">📅 Feb 16, 2025</span>
-                        </div>
-                    </a>
-                    <a href="english/spelling-bees/2025-02-09/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">February 9</div>
-                        <div class="card-description">
-                            History and properties: Of course, Comical, Myth,
-                            Labyrinth, Exciting, Instruction, Should, Ancient,
-                            Crown, Property
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date">📅 Feb 9, 2025</span>
-                        </div>
-                    </a>
-                    <a href="english/spelling-bees/2025-02-02/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">February 2</div>
-                        <div class="card-description">
-                            Body, health and adjectives: Fluffy, Bumpy, Stomach
-                            ache, Temperature, Sore Throat, Mountain, Rough,
-                            Curtain, Should, Design
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date">📅 Feb 2, 2025</span>
-                        </div>
-                    </a>
-                    <a href="english/spelling-bees/2025-01-26/" class="card">
-                        <div class="card-icon">🐝</div>
-                        <div class="card-title">January 26</div>
-                        <div class="card-description">
-                            Irregular verbs and everyday objects: Threw, Wrote,
-                            Knew, Tourist, Smooth, Light, Rubber, Mirror,
-                            Curtain, Feather
-                        </div>
-                        <div class="card-meta">
-                            <span class="badge badge-date">📅 Jan 26, 2025</span>
-                        </div>
-                    </a>
+                    <!-- Weekly bee cards generated dynamically from words.js -->
                 </div>
             </div>
 
@@ -261,20 +189,53 @@
                 </div>
             </div>
         </div>
+
+        <script src="english/spelling-bees/shared/words.js"></script>
         <script>
-            // Auto-hide NEW badges after 7 days
-            document.addEventListener('DOMContentLoaded', function() {
-                const newBadges = document.querySelectorAll('.badge-new[data-date]');
-                const now = new Date();
+            document.addEventListener('DOMContentLoaded', function () {
+                var grid = document.getElementById('bee-cards-grid');
+                var sets = Object.keys(SPELLING_BEE_SETS).sort().reverse(); // newest first
 
-                newBadges.forEach(badge => {
-                    const itemDate = new Date(badge.dataset.date);
-                    const daysDiff = Math.floor((now - itemDate) / (1000 * 60 * 60 * 24));
+                sets.forEach(function (setId, index) {
+                    var set = SPELLING_BEE_SETS[setId];
+                    var parts = setId.split('-');
+                    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                    var dateStr = d.toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    });
 
-                    if (daysDiff > 7) {
-                        badge.style.display = 'none';
-                    }
+                    var newBadge = index === 0
+                        ? '<span class="badge badge-new">NEW</span>'
+                        : '';
+
+                    var card = document.createElement('a');
+                    card.href = 'english/spelling-bees/play/?set=' + setId;
+                    card.className = 'card';
+                    card.innerHTML =
+                        '<div class="card-icon">\uD83D\uDC1D</div>' +
+                        '<div class="card-title">' + set.title + '</div>' +
+                        '<div class="card-description">' +
+                            set.description + ': ' + set.words.join(', ') +
+                        '</div>' +
+                        '<div class="card-meta">' + newBadge +
+                            '<span class="badge badge-date">\uD83D\uDCC5 ' + dateStr + '</span>' +
+                        '</div>';
+                    grid.appendChild(card);
                 });
+
+                // Update tournament card dynamically
+                var totalWords = getAllSpellingBeeWords().length;
+                var totalSets = Object.keys(SPELLING_BEE_SETS).length;
+                var descEl = document.getElementById('tournament-desc');
+                var badgeEl = document.getElementById('tournament-badge');
+                if (descEl) {
+                    descEl.textContent =
+                        'Master all ' + totalWords + ' spelling words from Sets 1\u2013' +
+                        totalSets + '! Smart hints, mistake tracking, and mastery system.';
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = totalWords + ' words';
+                }
             });
         </script>
     </body>
