@@ -187,6 +187,35 @@ var SPELLING_BEE_SETS = {
             "geography": "zeměpis",
         },
     },
+    "2025-03-16": {
+        title: "March 16",
+        date: "2025-03-16",
+        description: "People, places and things",
+        words: [
+            "Condition",
+            "Newspaper",
+            "Customers",
+            "Description",
+            "Interesting",
+            "Unfriendly",
+            "Pictures",
+            "Paintings",
+            "Detective",
+            "Archeologist",
+        ],
+        translations: {
+            "condition": "stav / podmínka",
+            "newspaper": "noviny",
+            "customers": "zákazníci",
+            "description": "popis",
+            "interesting": "zajímavý",
+            "unfriendly": "nepřátelský / nesympatický",
+            "pictures": "obrázky / fotografie",
+            "paintings": "obrazy / malby",
+            "detective": "detektiv",
+            "archeologist": "archeolog",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
