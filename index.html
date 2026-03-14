@@ -151,9 +151,75 @@
                 50%       { transform: translateY(-18px) rotate(8deg); }
             }
             .container { position: relative; z-index: 1; }
+
+            /* ── PWA Install Banner ── */
+            #pwa-banner {
+                position: fixed;
+                bottom: 1.2rem;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1000;
+                background: var(--primary);
+                color: var(--secondary);
+                border-radius: 16px;
+                box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+                padding: 1rem 1.4rem;
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+                max-width: 440px;
+                width: calc(100% - 2.4rem);
+                font-size: 0.95rem;
+                animation: bannerSlideUp 0.35s ease;
+            }
+            #pwa-banner.hidden { display: none; }
+            @keyframes bannerSlideUp {
+                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            #pwa-banner .pwa-icon { font-size: 2rem; flex-shrink: 0; }
+            #pwa-banner .pwa-text { flex: 1; line-height: 1.4; }
+            #pwa-banner .pwa-text strong { display: block; margin-bottom: 0.2rem; font-size: 1rem; }
+            #pwa-banner .pwa-text span { font-size: 0.88rem; }
+            #pwa-banner .pwa-install-btn {
+                background: var(--secondary);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 0.55rem 1rem;
+                font-size: 0.88rem;
+                font-weight: bold;
+                cursor: pointer;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            #pwa-banner .pwa-install-btn:hover { background: #1a252f; }
+            #pwa-banner .pwa-dismiss {
+                background: none;
+                border: none;
+                font-size: 1.2rem;
+                cursor: pointer;
+                color: var(--secondary);
+                padding: 0;
+                line-height: 1;
+                flex-shrink: 0;
+                opacity: 0.55;
+            }
+            #pwa-banner .pwa-dismiss:hover { opacity: 1; }
         </style>
     </head>
     <body>
+        <!-- PWA Install Banner -->
+        <div id="pwa-banner" class="hidden" role="complementary" aria-label="Přidat na plochu">
+            <span class="pwa-icon">🦛</span>
+            <span class="pwa-text">
+                <strong>Přidej Hrocha na plochu!</strong>
+                <span id="pwa-banner-msg"></span>
+            </span>
+            <button class="pwa-install-btn" id="pwa-install-btn" style="display:none">Přidat na plochu</button>
+            <button class="pwa-dismiss" id="pwa-dismiss-btn" aria-label="Zavřít">✕</button>
+        </div>
+
         <div class="bg-float">🐝</div>
         <div class="bg-float">🦛</div>
         <div class="bg-float">🐝</div>
@@ -206,7 +272,7 @@
         </div>
 
         <footer>
-            <small>v1.3.9</small>
+            <small>v1.4.0</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
@@ -259,6 +325,73 @@
                     '</div>';
                 grid.appendChild(tournament);
             });
+        </script>
+        <script>
+        (function () {
+            'use strict';
+
+            var DISMISS_KEY = 'hippo-pwa-dismissed';
+            var DISMISS_DAYS = 30;
+
+            // Pokud už běží jako nainstalovaná app → nic nezobrazuj
+            var isStandalone =
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true;
+            if (isStandalone) return;
+
+            function wasDismissed() {
+                var ts = localStorage.getItem(DISMISS_KEY);
+                return ts && (Date.now() - parseInt(ts, 10)) < DISMISS_DAYS * 86400000;
+            }
+
+            var banner     = document.getElementById('pwa-banner');
+            var msgEl      = document.getElementById('pwa-banner-msg');
+            var installBtn = document.getElementById('pwa-install-btn');
+            var dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+            function showBanner() { if (!wasDismissed()) banner.classList.remove('hidden'); }
+            function hideBanner()  { banner.classList.add('hidden'); }
+            function dismiss()     { localStorage.setItem(DISMISS_KEY, String(Date.now())); hideBanner(); }
+
+            dismissBtn.addEventListener('click', dismiss);
+
+            // Android / Chrome: beforeinstallprompt
+            var deferredPrompt = null;
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                msgEl.textContent = 'Budeš ho mít vždycky po ruce.';
+                installBtn.style.display = '';
+                showBanner();
+            });
+            installBtn.addEventListener('click', function () {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function (result) {
+                    if (result.outcome === 'accepted') hideBanner();
+                    deferredPrompt = null;
+                });
+            });
+            window.addEventListener('appinstalled', hideBanner);
+
+            // iOS Safari: detekce + instrukce (iPadOS 13+ se hlásí jako MacIntel)
+            var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS) {
+                msgEl.innerHTML = 'Klepni na \uD83D\uDCE4 <strong>Sd\u00edlet</strong> a pak na <strong>\u201EPřidat na plochu\u201C</strong>';
+                // installBtn zůstane skrytý — iOS neumí JS prompt
+                showBanner();
+            }
+
+            // Registrace Service Workeru
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('./sw.js').catch(function (err) {
+                        console.warn('SW registration failed:', err);
+                    });
+                });
+            }
+        }());
         </script>
     </body>
 </html>
