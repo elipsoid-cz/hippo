@@ -272,7 +272,7 @@
         </div>
 
         <footer>
-            <small>v1.4.0</small>
+            <small>v1.4.2</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
@@ -379,7 +379,17 @@
                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             if (isIOS) {
                 msgEl.innerHTML = 'Klepni na \uD83D\uDCE4 <strong>Sd\u00edlet</strong> a pak na <strong>\u201EPřidat na plochu\u201C</strong>';
-                // installBtn zůstane skrytý — iOS neumí JS prompt
+                showBanner();
+            }
+
+            // macOS Safari: detekce + instrukce pro Add to Dock (Sonoma+)
+            var isMacSafari = /^Mac/.test(navigator.platform) &&
+                              navigator.maxTouchPoints <= 1 &&
+                              /Safari/.test(navigator.userAgent) &&
+                              !/Chrome|CriOS/.test(navigator.userAgent);
+            if (isMacSafari) {
+                banner.querySelector('strong').textContent = 'P\u0159idej Hrocha do Docku!';
+                msgEl.innerHTML = 'V Safari klepni na <strong>Soubor</strong> \u2192 <strong>P\u0159idat do Docku</strong>';
                 showBanner();
             }
 
