@@ -554,6 +554,18 @@ input:read-only {
     border: 2px solid var(--primary);
 }
 
+.lb-placement {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: #fff9e6;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+}
+
 .lb-rank {
     width: 2em;
     display: flex;

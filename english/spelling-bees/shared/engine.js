@@ -313,8 +313,13 @@ var SpellingBeeEngine = (function () {
                 panel.remove();
                 loadLeaderboard(function (entries) {
                     renderLeaderboard(entries, nick);
-                    var lb = dom.finalScreen.querySelector(".leaderboard-container");
-                    if (lb) lb.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    var currentRow = dom.finalScreen.querySelector(".leaderboard-current");
+                    if (currentRow) {
+                        currentRow.scrollIntoView({ behavior: "smooth", block: "center" });
+                    } else {
+                        var lb = dom.finalScreen.querySelector(".leaderboard-container");
+                        if (lb) lb.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }
                 });
             });
         });
@@ -339,6 +344,32 @@ var SpellingBeeEngine = (function () {
             empty.textContent = "No scores yet \u2014 be the first!";
             container.appendChild(empty);
             return container;
+        }
+
+        // Pre-compute the current user's display rank for the placement banner
+        if (currentNickname) {
+            var userDisplayRank = 1;
+            for (var pi = 0; pi < entries.length; pi++) {
+                if (pi > 0) {
+                    var pp = entries[pi - 1];
+                    var pe = entries[pi];
+                    var pSame = (pe.score / pe.total) === (pp.score / pp.total) &&
+                        (pe.totalAttempts || Infinity) === (pp.totalAttempts || Infinity) &&
+                        (pe.bestStreak || 0) === (pp.bestStreak || 0);
+                    if (!pSame) userDisplayRank = pi + 1;
+                }
+                if (entries[pi].nickname.toLowerCase().trim() === currentNickname.toLowerCase().trim()) {
+                    var medalEmojiBanner = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
+                    var rankLabel = userDisplayRank <= 3
+                        ? medalEmojiBanner[userDisplayRank - 1] + " #" + userDisplayRank
+                        : "#" + userDisplayRank;
+                    var placement = document.createElement("div");
+                    placement.className = "lb-placement";
+                    placement.textContent = "Your place: " + rankLabel;
+                    container.appendChild(placement);
+                    break;
+                }
+            }
         }
 
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
@@ -412,6 +443,11 @@ var SpellingBeeEngine = (function () {
         } else {
             dom.finalScreen.appendChild(el);
         }
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                el.classList.add("is-loaded");
+            });
+        });
     }
 
     function renderWelcomeLeaderboard(entries) {
