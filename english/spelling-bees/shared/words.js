@@ -13,9 +13,9 @@ var FIREBASE_CONFIG = {
 };
 
 var SPELLING_BEE_SETS = {
-    "2025-01-26": {
+    "2026-01-26": {
         title: "January 26",
-        date: "2025-01-26",
+        date: "2026-01-26",
         description: "Irregular verbs and everyday objects",
         words: [
             "Threw",
@@ -42,9 +42,9 @@ var SPELLING_BEE_SETS = {
             "feather": "péro / peří",
         },
     },
-    "2025-02-02": {
+    "2026-02-02": {
         title: "February 2",
-        date: "2025-02-02",
+        date: "2026-02-02",
         description: "Body, health and adjectives",
         words: [
             "Fluffy",
@@ -71,9 +71,9 @@ var SPELLING_BEE_SETS = {
             "design": "vzor",
         },
     },
-    "2025-02-09": {
+    "2026-02-09": {
         title: "February 9",
-        date: "2025-02-09",
+        date: "2026-02-09",
         description: "History and properties",
         words: [
             "Of course",
@@ -100,9 +100,9 @@ var SPELLING_BEE_SETS = {
             "property": "vlastnost / majetek",
         },
     },
-    "2025-02-16": {
+    "2026-02-16": {
         title: "February 16",
-        date: "2025-02-16",
+        date: "2026-02-16",
         description: "Obligation and permission",
         words: [
             "Suggestion",
@@ -129,9 +129,9 @@ var SPELLING_BEE_SETS = {
             "couldn't": "nemohl/a",
         },
     },
-    "2025-02-23": {
+    "2026-02-23": {
         title: "February 23",
-        date: "2025-02-23",
+        date: "2026-02-23",
         description: "Science and everyday words",
         words: [
             "Project",
@@ -158,9 +158,9 @@ var SPELLING_BEE_SETS = {
             "miles": "míle",
         },
     },
-    "2025-03-09": {
+    "2026-03-09": {
         title: "March 9",
-        date: "2025-03-09",
+        date: "2026-03-09",
         description: "Geography, nature and science",
         words: [
             "Bridge",
@@ -187,10 +187,10 @@ var SPELLING_BEE_SETS = {
             "geography": "zeměpis",
         },
     },
-    "2025-03-16": {
+    "2026-03-16": {
         title: "March 16",
-        date: "2025-03-16",
-        description: "People, places and things",
+        date: "2026-03-16",
+        description: "People, jobs and everyday words",
         words: [
             "Condition",
             "Newspaper",
@@ -202,6 +202,16 @@ var SPELLING_BEE_SETS = {
             "Paintings",
             "Detective",
             "Archeologist",
+            "Fanfare",
+            "Journalist",
+            "Designer",
+            "Photographer",
+            "Waiter",
+            "Gymnast",
+            "Fantastic",
+            "Customer",
+            "Address",
+            "Definitely",
         ],
         translations: {
             "condition": "stav / podmínka",
@@ -214,6 +224,16 @@ var SPELLING_BEE_SETS = {
             "paintings": "obrazy / malby",
             "detective": "detektiv",
             "archeologist": "archeolog",
+            "fanfare": "fanfára",
+            "journalist": "novinář",
+            "designer": "návrhář / designér",
+            "photographer": "fotograf",
+            "waiter": "číšník",
+            "gymnast": "gymnasta",
+            "fantastic": "fantastický",
+            "customer": "zákazník",
+            "address": "adresa",
+            "definitely": "rozhodně / určitě",
         },
     },
 };

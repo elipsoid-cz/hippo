@@ -192,7 +192,7 @@
                 sets.forEach(function (setId, index) {
                     var set = SPELLING_BEE_SETS[setId];
                     var parts = setId.split('-');
-                    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                    var d = new Date(+parts[0], +parts[1] - 1, parseInt(parts[2]));
                     var dateStr = d.toLocaleDateString('en-US', {
                         month: 'short', day: 'numeric', year: 'numeric'
                     });
