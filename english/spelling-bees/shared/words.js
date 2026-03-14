@@ -194,7 +194,6 @@ var SPELLING_BEE_SETS = {
         words: [
             "Condition",
             "Newspaper",
-            "Customers",
             "Description",
             "Interesting",
             "Unfriendly",
@@ -216,7 +215,6 @@ var SPELLING_BEE_SETS = {
         translations: {
             "condition": "stav / podmínka",
             "newspaper": "noviny",
-            "customers": "zákazníci",
             "description": "popis",
             "interesting": "zajímavý",
             "unfriendly": "nepřátelský / nesympatický",
