@@ -56,6 +56,7 @@ var SpellingBeeEngine = (function () {
         dom.retryMistakesBtn = document.getElementById("retry-mistakes-btn");
         dom.playAgainBtn = document.getElementById("play-again-btn");
         dom.mistakePills = document.getElementById("mistake-pills");
+        dom.leaderboardZone = document.getElementById("leaderboard-zone");
 
         // Create translation display element if not already in HTML
         dom.translationDisplay = document.getElementById("translation-display");
@@ -286,8 +287,10 @@ var SpellingBeeEngine = (function () {
             '<button id="save-score-btn" class="btn-save-score">Save</button>' +
             '</div>';
 
-        // Insert before Play Again button
-        if (dom.playAgainBtn) {
+        if (dom.leaderboardZone) {
+            dom.leaderboardZone.innerHTML = "";
+            dom.leaderboardZone.appendChild(panel);
+        } else if (dom.playAgainBtn) {
             dom.finalScreen.insertBefore(panel, dom.playAgainBtn);
         } else {
             dom.finalScreen.appendChild(panel);
@@ -434,14 +437,18 @@ var SpellingBeeEngine = (function () {
     }
 
     function renderLeaderboard(entries, currentNickname) {
-        var existing = dom.finalScreen.querySelector(".leaderboard-container");
-        if (existing) existing.remove();
-
         var el = buildLeaderboardElement(entries, currentNickname);
-        if (dom.playAgainBtn) {
-            dom.finalScreen.insertBefore(el, dom.playAgainBtn);
+        if (dom.leaderboardZone) {
+            dom.leaderboardZone.innerHTML = "";
+            dom.leaderboardZone.appendChild(el);
         } else {
-            dom.finalScreen.appendChild(el);
+            var existing = dom.finalScreen.querySelector(".leaderboard-container");
+            if (existing) existing.remove();
+            if (dom.playAgainBtn) {
+                dom.finalScreen.insertBefore(el, dom.playAgainBtn);
+            } else {
+                dom.finalScreen.appendChild(el);
+            }
         }
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
@@ -996,7 +1003,6 @@ var SpellingBeeEngine = (function () {
         // Leaderboard (only for normal game, not Practice Mistakes)
         if (state.mode === "all") {
             renderSavePanel();
-            showExistingLeaderboard();
         }
     }
 

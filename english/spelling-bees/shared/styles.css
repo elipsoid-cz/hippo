@@ -163,8 +163,15 @@ input:read-only {
 }
 
 .btn-retry {
-    background-color: #8e44ad;
+    background-color: transparent;
+    color: #8e44ad;
+    border: 2px solid #8e44ad;
     margin-top: 10px;
+}
+
+.btn-retry:hover {
+    background-color: #8e44ad;
+    color: #fff;
 }
 
 .btn-mistakes {
