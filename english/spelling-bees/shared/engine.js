@@ -367,20 +367,28 @@ var SpellingBeeEngine = (function () {
             var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
             var pct = Math.round((entry.score / entry.total) * 100);
             var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
-            var attemptsHtml = (mistakes !== null)
-                ? (mistakes === 0
-                    ? '<span class="lb-attempts lb-perfect" title="No mistakes!">\uD83C\uDFAF</span>'
-                    : '<span class="lb-attempts" title="Mistakes">\u274C' + mistakes + '</span>')
-                : '';
+            var mistakesHtml;
+            if (mistakes === null) {
+                mistakesHtml = '<span class="lb-attempts"></span>';
+            } else if (mistakes === 0) {
+                mistakesHtml = '<span class="lb-perfect">\uD83C\uDFAF</span>';
+            } else {
+                mistakesHtml = '<span class="lb-attempts">\u274C\u00A0' + mistakes + '</span>';
+            }
             var streakHtml = entry.bestStreak >= 3
-                ? '<span class="lb-streak" title="Best streak — longest run of correct answers in a row">\uD83D\uDD25' + entry.bestStreak + '</span>'
-                : '';
+                ? '<span class="lb-streak">\uD83D\uDD25\u00A0' + entry.bestStreak + '</span>'
+                : '<span class="lb-streak"></span>';
 
+            var mistakeWord = (mistakes === 1) ? '1 mistake' : (mistakes > 1 ? mistakes + ' mistakes' : 'no mistakes');
+            var tooltip = entry.nickname + ' \u2014 ' + entry.score + '/' + entry.total + ' correct'
+                + (entry.bestStreak >= 3 ? ' \u00B7 best streak: ' + entry.bestStreak : '')
+                + ' \u00B7 ' + mistakeWord;
+
+            row.title = tooltip;
             row.innerHTML =
                 '<span class="lb-rank">' + rank + '</span>' +
                 '<span class="lb-name">' + entry.nickname + '</span>' +
-                '<span class="lb-score">' + entry.score + '/' + entry.total +
-                ' (' + pct + '%)</span>' + attemptsHtml + streakHtml;
+                '<span class="lb-score">' + pct + '%</span>' + streakHtml + mistakesHtml;
 
             container.appendChild(row);
         }

@@ -556,20 +556,29 @@ input:read-only {
     color: #7f8c8d;
     font-size: 0.9rem;
     flex-shrink: 0;
+    width: 3.5em;
+    text-align: center;
+}
+
+.lb-streak {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    width: 3.5em;
+    text-align: center;
+    color: #7f8c8d;
 }
 
 .lb-attempts {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
+    width: 3em;
+    text-align: center;
     color: #7f8c8d;
 }
 
 .lb-perfect {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
-}
-
-.lb-streak {
-    font-size: 1.1rem;
-    flex-shrink: 0;
+    width: 3em;
+    text-align: center;
 }
