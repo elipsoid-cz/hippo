@@ -131,9 +131,35 @@
                 border-top: 1px solid #ddd;
                 color: #95a5a6;
             }
+            /* Floating background decorations */
+            .bg-float {
+                position: fixed;
+                pointer-events: none;
+                z-index: 0;
+                font-size: 2rem;
+                opacity: 0.12;
+                animation: bgFloat 8s ease-in-out infinite;
+            }
+            .bg-float:nth-child(1) { top: 8%;  left: 4%;  animation-delay: 0s;   animation-duration: 7s; }
+            .bg-float:nth-child(2) { top: 25%; right: 6%; animation-delay: 2s;   animation-duration: 9s; }
+            .bg-float:nth-child(3) { top: 55%; left: 3%;  animation-delay: 4s;   animation-duration: 8s; }
+            .bg-float:nth-child(4) { top: 75%; right: 4%; animation-delay: 1s;   animation-duration: 10s; }
+            .bg-float:nth-child(5) { top: 42%; right: 2%; animation-delay: 3s;   animation-duration: 7s; }
+            .bg-float:nth-child(6) { top: 88%; left: 7%;  animation-delay: 5s;   animation-duration: 9s; }
+            @keyframes bgFloat {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                50%       { transform: translateY(-18px) rotate(8deg); }
+            }
+            .container { position: relative; z-index: 1; }
         </style>
     </head>
     <body>
+        <div class="bg-float">🐝</div>
+        <div class="bg-float">🦛</div>
+        <div class="bg-float">🐝</div>
+        <div class="bg-float">🦛</div>
+        <div class="bg-float">🐝</div>
+        <div class="bg-float">🦛</div>
         <div class="container">
             <header>
                 <h1>🦛 Hippo</h1>
@@ -180,7 +206,7 @@
         </div>
 
         <footer>
-            <small>v1.3.2</small>
+            <small>v1.3.3</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
