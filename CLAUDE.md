@@ -66,5 +66,5 @@ Stačí přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.3.0**
+- Aktuální verze: **v1.3.1**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!

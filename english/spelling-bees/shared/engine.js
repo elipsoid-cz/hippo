@@ -243,7 +243,7 @@ var SpellingBeeEngine = (function () {
         db.collection("leaderboards").doc(config.setId)
             .collection("scores")
             .orderBy("score", "desc")
-            .limit(10)
+            .limit(30)
             .get()
             .then(function (snapshot) {
                 var entries = [];
@@ -340,7 +340,7 @@ var SpellingBeeEngine = (function () {
         }
 
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
-        var maxDisplay = 5;
+        var maxDisplay = 30;
         var displayRank = 1;
 
         for (var i = 0; i < Math.min(entries.length, maxDisplay); i++) {

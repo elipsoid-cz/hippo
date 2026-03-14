@@ -497,7 +497,7 @@ input:read-only {
 }
 
 .leaderboard-container.is-loaded {
-    max-height: 400px;
+    max-height: 2000px;
     opacity: 1;
 }
 
