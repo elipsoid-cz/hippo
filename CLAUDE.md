@@ -45,6 +45,23 @@ Each exercise should have:
 ### Přidání nového spelling bee setu
 Stačí přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage se zobrazí automaticky, NEW badge se přiřadí nejnovějšímu setu (nejvyšší klíč).
 
+### Pravidlo pro překlady (translations)
+**DŮLEŽITÉ:** Překlad nesmí prozrazovat hláskování anglického slova. Vždy zkontroluj, zda český překlad není příliš podobný anglickému originálu.
+
+Zakázáno (příliš napovídá):
+- `designer` → "designér" (skoro stejné slovo)
+- `fantastic` → "fantastický" (stejný základ)
+- `chemistry` → "chemie" (stejný základ)
+- `detective` → "detektiv" (stejný základ)
+
+Správně (použij skutečný český ekvivalent nebo opisný překlad):
+- `designer` → "návrhář"
+- `fantastic` → "úžasný / skvělý"
+- `chemistry` → "nauka o látkách"
+- `detective` → "vyšetřovatel"
+
+Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvodit z toho anglický pravopis, překlad je špatný.
+
 ### Architektura karet (index.html)
 - Spelling bee karty jsou generovány dynamicky z `words.js` (JS na konci body)
 - Tournament badge (počet slov, počet setů) se počítá automaticky přes `getAllSpellingBeeWords()`
