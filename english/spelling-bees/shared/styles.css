@@ -556,8 +556,9 @@ input:read-only {
 
 .lb-rank {
     width: 2em;
-    text-align: center;
-    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     flex-shrink: 0;
 }
 
@@ -600,4 +601,13 @@ input:read-only {
     flex-shrink: 0;
     width: 3em;
     text-align: center;
+}
+
+.lb-perfect-label {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    width: calc(6.5em + 8px);
+    text-align: center;
+    color: #7f8c8d;
+    letter-spacing: 0.01em;
 }

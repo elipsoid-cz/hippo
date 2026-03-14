@@ -313,6 +313,8 @@ var SpellingBeeEngine = (function () {
                 panel.remove();
                 loadLeaderboard(function (entries) {
                     renderLeaderboard(entries, nick);
+                    var lb = dom.finalScreen.querySelector(".leaderboard-container");
+                    if (lb) lb.scrollIntoView({ behavior: "smooth", block: "nearest" });
                 });
             });
         });
@@ -367,17 +369,21 @@ var SpellingBeeEngine = (function () {
             var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
             var pct = Math.round((entry.score / entry.total) * 100);
             var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
-            var mistakesHtml;
-            if (mistakes === null) {
-                mistakesHtml = '<span class="lb-attempts"></span>';
-            } else if (mistakes === 0) {
-                mistakesHtml = '<span class="lb-perfect">\uD83C\uDFAF</span>';
+            var extraHtml;
+            if (pct === 100) {
+                extraHtml = '<span class="lb-perfect-label">\uD83C\uDFAF Perfect!</span>';
             } else {
-                mistakesHtml = '<span class="lb-attempts">\u274C\u00A0' + mistakes + '</span>';
+                var mistakesHtml;
+                if (mistakes === null) {
+                    mistakesHtml = '<span class="lb-attempts"></span>';
+                } else {
+                    mistakesHtml = '<span class="lb-attempts">\u274C\u00A0' + mistakes + '</span>';
+                }
+                var streakHtml = entry.bestStreak >= 3
+                    ? '<span class="lb-streak">\uD83D\uDD25\u00A0' + entry.bestStreak + '</span>'
+                    : '<span class="lb-streak"></span>';
+                extraHtml = streakHtml + mistakesHtml;
             }
-            var streakHtml = entry.bestStreak >= 3
-                ? '<span class="lb-streak">\uD83D\uDD25\u00A0' + entry.bestStreak + '</span>'
-                : '<span class="lb-streak"></span>';
 
             var mistakeWord = (mistakes === 1) ? '1 mistake' : (mistakes > 1 ? mistakes + ' mistakes' : 'no mistakes');
             var tooltip = entry.nickname + ' \u2014 ' + entry.score + '/' + entry.total + ' correct'
@@ -388,7 +394,7 @@ var SpellingBeeEngine = (function () {
             row.innerHTML =
                 '<span class="lb-rank">' + rank + '</span>' +
                 '<span class="lb-name">' + entry.nickname + '</span>' +
-                '<span class="lb-score">' + pct + '%</span>' + streakHtml + mistakesHtml;
+                '<span class="lb-score">' + pct + '%</span>' + extraHtml;
 
             container.appendChild(row);
         }
