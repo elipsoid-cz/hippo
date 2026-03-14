@@ -341,6 +341,7 @@ var SpellingBeeEngine = (function () {
 
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
         var maxDisplay = 5;
+        var displayRank = 1;
 
         for (var i = 0; i < Math.min(entries.length, maxDisplay); i++) {
             var entry = entries[i];
@@ -352,17 +353,34 @@ var SpellingBeeEngine = (function () {
                 row.classList.add("leaderboard-current");
             }
 
-            var rank = i < 3 ? medalEmoji[i] : (i + 1) + ".";
+            // Tied rank: same position if score%, attempts and streak are all equal
+            if (i > 0) {
+                var prev = entries[i - 1];
+                var samePct = (entry.score / entry.total) === (prev.score / prev.total);
+                var sameAttempts = (entry.totalAttempts || Infinity) === (prev.totalAttempts || Infinity);
+                var sameStreak = (entry.bestStreak || 0) === (prev.bestStreak || 0);
+                if (!samePct || !sameAttempts || !sameStreak) {
+                    displayRank = i + 1;
+                }
+            }
+
+            var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
             var pct = Math.round((entry.score / entry.total) * 100);
+            var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
+            var attemptsHtml = (mistakes !== null)
+                ? (mistakes === 0
+                    ? '<span class="lb-attempts lb-perfect" title="No mistakes!">\uD83C\uDFAF</span>'
+                    : '<span class="lb-attempts" title="Mistakes">\u274C' + mistakes + '</span>')
+                : '';
             var streakHtml = entry.bestStreak >= 3
-                ? '<span class="lb-streak">\uD83D\uDD25' + entry.bestStreak + '</span>'
+                ? '<span class="lb-streak" title="Best streak — longest run of correct answers in a row">\uD83D\uDD25' + entry.bestStreak + '</span>'
                 : '';
 
             row.innerHTML =
                 '<span class="lb-rank">' + rank + '</span>' +
                 '<span class="lb-name">' + entry.nickname + '</span>' +
                 '<span class="lb-score">' + entry.score + '/' + entry.total +
-                ' (' + pct + '%)</span>' + streakHtml;
+                ' (' + pct + '%)</span>' + attemptsHtml + streakHtml;
 
             container.appendChild(row);
         }
