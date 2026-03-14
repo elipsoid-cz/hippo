@@ -174,9 +174,32 @@ input:read-only {
     color: #fff;
 }
 
+#mistakes-group {
+    background: #fdf3e7;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
 .btn-mistakes {
-    background-color: #e67e22;
-    margin-top: 8px;
+    background: none;
+    border: none;
+    color: #e67e22;
+    font-size: 0.95rem;
+    font-weight: normal;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 10px 0;
+    margin-top: 4px;
+    margin-bottom: 0;
+    width: auto;
+    cursor: pointer;
+}
+
+.btn-mistakes:hover {
+    color: #c0392b;
+    transform: none;
+    opacity: 1;
 }
 
 /* --- Progress Bar --- */
@@ -339,7 +362,8 @@ input:read-only {
     flex-wrap: wrap;
     gap: 6px;
     justify-content: center;
-    margin-top: 12px;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .pill {

@@ -56,6 +56,7 @@ var SpellingBeeEngine = (function () {
         dom.retryMistakesBtn = document.getElementById("retry-mistakes-btn");
         dom.playAgainBtn = document.getElementById("play-again-btn");
         dom.mistakePills = document.getElementById("mistake-pills");
+        dom.mistakesGroup = document.getElementById("mistakes-group");
         dom.leaderboardZone = document.getElementById("leaderboard-zone");
 
         // Create translation display element if not already in HTML
@@ -347,32 +348,6 @@ var SpellingBeeEngine = (function () {
             empty.textContent = "No scores yet \u2014 be the first!";
             container.appendChild(empty);
             return container;
-        }
-
-        // Pre-compute the current user's display rank for the placement banner
-        if (currentNickname) {
-            var userDisplayRank = 1;
-            for (var pi = 0; pi < entries.length; pi++) {
-                if (pi > 0) {
-                    var pp = entries[pi - 1];
-                    var pe = entries[pi];
-                    var pSame = (pe.score / pe.total) === (pp.score / pp.total) &&
-                        (pe.totalAttempts || Infinity) === (pp.totalAttempts || Infinity) &&
-                        (pe.bestStreak || 0) === (pp.bestStreak || 0);
-                    if (!pSame) userDisplayRank = pi + 1;
-                }
-                if (entries[pi].nickname.toLowerCase().trim() === currentNickname.toLowerCase().trim()) {
-                    var medalEmojiBanner = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
-                    var rankLabel = userDisplayRank <= 3
-                        ? medalEmojiBanner[userDisplayRank - 1] + " #" + userDisplayRank
-                        : "#" + userDisplayRank;
-                    var placement = document.createElement("div");
-                    placement.className = "lb-placement";
-                    placement.textContent = "Your place: " + rankLabel;
-                    container.appendChild(placement);
-                    break;
-                }
-            }
         }
 
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
@@ -1050,13 +1025,9 @@ var SpellingBeeEngine = (function () {
                     : "All Words (" + config.words.length + ")";
             }
             if (dom.startMistakesBtn) {
-                show(dom.startMistakesBtn);
-                dom.startMistakesBtn.textContent =
-                    "Practice Mistakes (" + mistakeWords.length + ")";
+                dom.startMistakesBtn.textContent = "Practice Mistakes";
             }
-            // Show pills
             if (dom.mistakePills) {
-                show(dom.mistakePills);
                 dom.mistakePills.innerHTML =
                     '<div class="pill-container">' +
                     mistakeWords
@@ -1066,14 +1037,14 @@ var SpellingBeeEngine = (function () {
                         .join("") +
                     "</div>";
             }
+            if (dom.mistakesGroup) show(dom.mistakesGroup);
         } else {
             if (dom.startAllBtn) {
                 dom.startAllBtn.textContent = config.wordsPerRound > 0
                     ? "START (" + config.wordsPerRound + " words)"
                     : "START";
             }
-            if (dom.startMistakesBtn) hide(dom.startMistakesBtn);
-            if (dom.mistakePills) hide(dom.mistakePills);
+            if (dom.mistakesGroup) hide(dom.mistakesGroup);
         }
 
     }
