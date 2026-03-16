@@ -45,6 +45,15 @@ Each exercise should have:
 ### Přidání nového spelling bee setu
 Stačí přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage se zobrazí automaticky, NEW badge se přiřadí nejnovějšímu setu (nejvyšší klíč).
 
+**Po přidání setu vždy vygenerovat cover obrázek:**
+```bash
+node scripts/generate-covers.js --set YYYY-MM-DD
+```
+Skript uloží `english/spelling-bees/{setId}/cover.jpg` a přidá `cover: true` do `words.js`. Před spuštěním se zeptej uživatele (placené API).
+
+### Cover obrázky — tournament
+Pro regeneraci tournament coveru použij prompt uložený v paměti (`project_cover_images.md`). Výsledek: `english/spelling-bees/tournament/cover.jpg`.
+
 ### Pravidlo pro překlady (translations)
 **DŮLEŽITÉ:** Překlad nesmí prozrazovat hláskování anglického slova. Vždy zkontroluj, zda český překlad není příliš podobný anglickému originálu.
 
