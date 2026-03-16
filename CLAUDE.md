@@ -80,6 +80,9 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - **Bug (opraveno):** Save panel z předchozí All Words hry zůstával v DOM a byl znovu viditelný po Practice Mistakes → `showFinal()` nyní vždy odstraní starý panel na začátku
 - **Security:** Firebase API key is intentionally public; security enforced by Firestore rules; key restricted to `elipsoid-cz.github.io/*`
 
+## Placená API volání
+- **DŮLEŽITÉ:** Před každým voláním API, které stojí peníze (Gemini image generation, Firebase paid tier, apod.), se vždy zeptej uživatele a počkej na jeho souhlas. Nespouštěj taková volání automaticky.
+
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna

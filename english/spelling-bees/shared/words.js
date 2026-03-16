@@ -14,6 +14,7 @@ var FIREBASE_CONFIG = {
 
 var SPELLING_BEE_SETS = {
     "2026-01-26": {
+        cover: true,
         title: "January 26",
         date: "2026-01-26",
         description: "Irregular verbs and everyday objects",
@@ -43,6 +44,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-02": {
+        cover: true,
         title: "February 2",
         date: "2026-02-02",
         description: "Body, health and adjectives",
@@ -72,6 +74,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-09": {
+        cover: true,
         title: "February 9",
         date: "2026-02-09",
         description: "History and properties",
@@ -101,6 +104,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-16": {
+        cover: true,
         title: "February 16",
         date: "2026-02-16",
         description: "Obligation and permission",
@@ -130,6 +134,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-23": {
+        cover: true,
         title: "February 23",
         date: "2026-02-23",
         description: "Science and everyday words",
@@ -159,6 +164,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-09": {
+        cover: true,
         title: "March 9",
         date: "2026-03-09",
         description: "Geography, nature and science",
@@ -188,6 +194,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-16": {
+        cover: true,
         title: "March 16",
         date: "2026-03-16",
         description: "People, jobs and everyday words",
@@ -217,6 +224,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-23": {
+        cover: true,
         title: "March 23",
         date: "2026-03-23",
         description: "People, places and things",

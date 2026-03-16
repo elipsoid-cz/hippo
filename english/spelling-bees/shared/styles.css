@@ -38,6 +38,26 @@ body {
 /* Hide animated background during the game (keep only on welcome/final screens) */
 body:has(#game-zone:not(.hidden)) .bg-float { display: none; }
 
+/* Cover image on welcome screen */
+#set-cover {
+    margin: -2.5rem -2.5rem 1.5rem -2.5rem;
+    border-radius: 25px 25px 0 0;
+    overflow: hidden;
+    height: 220px;
+}
+#set-cover.hidden { display: none; }
+#set-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+/* Restore bee icon when game or final screen is active */
+#game-container:has(#game-zone:not(.hidden)) #header-icon,
+#game-container:has(#final-screen:not(.hidden)) #header-icon {
+    display: block !important;
+}
+
 #game-container {
     background: white;
     padding: 2.5rem;

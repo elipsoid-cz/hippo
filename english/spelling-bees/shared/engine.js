@@ -13,6 +13,7 @@ var SpellingBeeEngine = (function () {
         masteryThreshold: 3,
         wordsPerRound: 0, // 0 = use all words; >0 = pick N words per round (tournament mode)
         translations: {}, // optional: lowercase word -> Czech translation
+        cover: null,      // optional: URL to cover image (shown on welcome screen)
     };
 
     // --- Internal State ---
@@ -58,6 +59,7 @@ var SpellingBeeEngine = (function () {
         dom.mistakePills = document.getElementById("mistake-pills");
         dom.mistakesGroup = document.getElementById("mistakes-group");
         dom.leaderboardZone = document.getElementById("leaderboard-zone");
+        dom.setCover = document.getElementById("set-cover");
 
         // Create translation display element if not already in HTML
         dom.translationDisplay = document.getElementById("translation-display");
@@ -1008,7 +1010,17 @@ var SpellingBeeEngine = (function () {
     // =====================
 
     function setupWelcomeScreen() {
-        if (dom.headerIcon) dom.headerIcon.textContent = config.icon;
+        if (dom.setCover) {
+            if (config.cover) {
+                dom.setCover.innerHTML = '<img src="' + config.cover + '" alt="' + config.title + '">';
+                dom.setCover.classList.remove('hidden');
+                if (dom.headerIcon) dom.headerIcon.style.display = 'none';
+            } else {
+                dom.setCover.classList.add('hidden');
+                if (dom.headerIcon) dom.headerIcon.style.display = '';
+            }
+        }
+        if (dom.headerIcon && !config.cover) dom.headerIcon.textContent = config.icon;
         if (dom.headerTitle) dom.headerTitle.textContent = config.title;
         if (dom.headerDesc) {
             dom.headerDesc.textContent = config.wordsPerRound > 0
