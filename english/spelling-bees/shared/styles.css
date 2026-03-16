@@ -35,6 +35,8 @@ body {
     50%       { transform: translateY(-18px) rotate(8deg); }
 }
 #game-container { position: relative; z-index: 1; }
+/* Hide animated background during the game (keep only on welcome/final screens) */
+body:has(#game-zone:not(.hidden)) .bg-float { display: none; }
 
 #game-container {
     background: white;
