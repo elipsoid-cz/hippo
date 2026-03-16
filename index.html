@@ -77,10 +77,21 @@
                 display: block;
                 border-bottom: 5px solid var(--primary);
             }
+            .card-tournament {
+                background: var(--secondary);
+                border-bottom-color: #5d8aa8;
+            }
+            .card-tournament .card-title,
+            .card-tournament .card-description {
+                color: #fff;
+            }
             .card:hover {
                 transform: translateY(-5px);
                 box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
                 background-color: var(--card-hover);
+            }
+            .card.card-tournament:hover {
+                background-color: #3d5166;
             }
             .card-icon {
                 font-size: 3rem;
@@ -91,11 +102,20 @@
                 font-weight: bold;
                 color: var(--secondary);
                 margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
             .card-description {
                 color: #7f8c8d;
                 font-size: 1rem;
                 line-height: 1.5;
+            }
+            .card-words {
+                color: #b0bec5;
+                font-size: 0.85rem;
+                margin-top: 0.4rem;
+                line-height: 1.4;
             }
             .card-meta {
                 margin-top: 1rem;
@@ -314,13 +334,9 @@
                     card.className = 'card';
                     card.innerHTML =
                         coverHtml +
-                        '<div class="card-title">' + set.title + '</div>' +
-                        '<div class="card-description">' +
-                            set.description + ': ' + set.words.join(', ') +
-                        '</div>' +
-                        '<div class="card-meta">' + newBadge +
-                            '<span class="badge badge-date">\uD83D\uDCC5 ' + dateStr + '</span>' +
-                        '</div>';
+                        '<div class="card-title">' + set.title + (newBadge ? ' ' + newBadge : '') + '</div>' +
+                        '<div class="card-description">' + set.description + '</div>' +
+                        '<div class="card-words">' + set.words.join(', ') + '</div>';
                     grid.appendChild(card);
                 });
 
@@ -329,7 +345,7 @@
                 var totalSets = Object.keys(SPELLING_BEE_SETS).length;
                 var tournament = document.createElement('a');
                 tournament.href = 'english/spelling-bees/tournament/';
-                tournament.className = 'card';
+                tournament.className = 'card card-tournament';
                 tournament.innerHTML =
                     '<div class="card-cover"><img src="english/spelling-bees/tournament/cover.jpg" alt="Tournament"></div>' +
                     '<div class="card-title">Spelling Bee Tournament</div>' +
