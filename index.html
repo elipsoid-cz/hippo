@@ -3,7 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Hippo 🦛</title>
+        <title>HippoBee 🐝</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet" />
 
         <!-- Favicon -->
         <link rel="icon" type="image/png" sizes="32x32" href="./favicon.ico" />
@@ -38,16 +42,51 @@
             }
             header {
                 text-align: center;
-                margin-bottom: 3rem;
+                margin-bottom: 0.3rem;
             }
             h1 {
                 color: var(--secondary);
-                font-size: 3rem;
-                margin: 0 0 0.5rem 0;
+                font-size: 3.2rem;
+                margin: 0 0 0.2rem 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+                font-family: 'Fredoka One', 'Segoe UI', sans-serif;
+                letter-spacing: 0.02em;
             }
+            .logo-img {
+                height: 6rem;
+                width: auto;
+            }
+            .logo-hippo { color: #2c3e50; }
+            .logo-bee   { color: #d97706; }
             .subtitle {
                 color: #7f8c8d;
                 font-size: 1.2rem;
+            }
+            .grammar-link {
+                margin-top: 3rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid #e0dcc8;
+                text-align: center;
+            }
+            .grammar-link summary {
+                display: inline-block;
+                cursor: pointer;
+                color: #b0bec5;
+                font-size: 0.85rem;
+                user-select: none;
+                list-style: none;
+            }
+            .grammar-link summary::-webkit-details-marker { display: none; }
+            .grammar-link summary:hover { color: #7f8c8d; }
+            .grammar-inner {
+                margin-top: 1rem;
+            }
+            .grammar-inner .cards-grid {
+                max-width: 700px;
+                margin: 0 auto;
             }
             .section {
                 margin-bottom: 3rem;
@@ -260,51 +299,52 @@
         <div class="bg-float">🦛</div>
         <div class="container">
             <header>
-                <h1>🦛 Hippo</h1>
+                <h1><img src="logo_shaggy_transparent.png" alt="HippoBee logo" class="logo-img"><span class="logo-hippo" style="margin-left:0.5rem">Hippo</span><span class="logo-bee">Bee</span></h1>
             </header>
 
             <div class="section">
-                <h2 class="section-title">🐝 Spelling Bee - English</h2>
                 <div class="cards-grid" id="bee-cards-grid">
                     <!-- Cards generated dynamically from words.js (weekly sets first, tournament last) -->
                 </div>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">📝 Grammar - English</h2>
-                <div class="cards-grid">
-                    <a href="english/grammar/irregular-verbs-1/" class="card">
-                        <div class="card-icon">🚀</div>
-                        <div class="card-title">Irregular Verbs Quest #1</div>
-                        <div class="card-description">
-                            Master irregular past tense verbs! Practice 11 common
-                            verbs: build, grow, teach, see, drive, give, write,
-                            tell, get, take, have
-                        </div>
-                    </a>
-                    <a href="english/grammar/irregular-verbs-2/" class="card">
-                        <div class="card-icon">🌟</div>
-                        <div class="card-title">Irregular Verbs Quest #2</div>
-                        <div class="card-description">
-                            Continue practicing irregular past tense verbs! Same
-                            verbs, new challenge for reinforcement learning
-                        </div>
-                    </a>
-                    <a href="english/grammar/comparatives/" class="card">
-                        <div class="card-icon">📊</div>
-                        <div class="card-title">Comparatives & Superlatives</div>
-                        <div class="card-description">
-                            Master comparative and superlative forms! Practice 10
-                            adjectives: strong, big, tall, clever, funny, careful,
-                            boring, interesting, loud, quiet
-                        </div>
-                    </a>
+            <details class="grammar-link">
+                <summary>📝 Grammar exercises</summary>
+                <div class="grammar-inner">
+                    <div class="cards-grid">
+                        <a href="english/grammar/irregular-verbs-1/" class="card">
+                            <div class="card-icon">🚀</div>
+                            <div class="card-title">Irregular Verbs Quest #1</div>
+                            <div class="card-description">
+                                Master irregular past tense verbs! Practice 11 common
+                                verbs: build, grow, teach, see, drive, give, write,
+                                tell, get, take, have
+                            </div>
+                        </a>
+                        <a href="english/grammar/irregular-verbs-2/" class="card">
+                            <div class="card-icon">🌟</div>
+                            <div class="card-title">Irregular Verbs Quest #2</div>
+                            <div class="card-description">
+                                Continue practicing irregular past tense verbs! Same
+                                verbs, new challenge for reinforcement learning
+                            </div>
+                        </a>
+                        <a href="english/grammar/comparatives/" class="card">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Comparatives & Superlatives</div>
+                            <div class="card-description">
+                                Master comparative and superlative forms! Practice 10
+                                adjectives: strong, big, tall, clever, funny, careful,
+                                boring, interesting, loud, quiet
+                            </div>
+                        </a>
+                    </div>
                 </div>
-            </div>
+            </details>
         </div>
 
         <footer>
-            <small>v1.5.3</small>
+            <small>v1.6.0</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
@@ -326,7 +366,7 @@
                         : '';
 
                     var coverHtml = set.cover
-                        ? '<div class="card-cover"><img src="english/spelling-bees/' + setId + '/cover.jpg" alt="' + set.title + '"></div>'
+                        ? '<div class="card-cover"><img src="english/spelling-bees/' + setId + '/cover-thumb.jpg" alt="' + set.title + '"></div>'
                         : '<div class="card-icon">\uD83D\uDC1D</div>';
 
                     var card = document.createElement('a');
@@ -347,7 +387,7 @@
                 tournament.href = 'english/spelling-bees/tournament/';
                 tournament.className = 'card card-tournament';
                 tournament.innerHTML =
-                    '<div class="card-cover"><img src="english/spelling-bees/tournament/cover.jpg" alt="Tournament"></div>' +
+                    '<div class="card-cover"><img src="english/spelling-bees/tournament/cover-thumb.jpg" alt="Tournament"></div>' +
                     '<div class="card-title">Spelling Bee Tournament</div>' +
                     '<div class="card-description">Master all ' + totalWords +
                         ' spelling words from Sets 1\u2013' + totalSets +
