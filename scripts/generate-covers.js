@@ -10,9 +10,10 @@
 
 'use strict';
 
-const fs   = require('fs');
-const path = require('path');
-const vm   = require('vm');
+const fs            = require('fs');
+const path          = require('path');
+const vm            = require('vm');
+const { execSync }  = require('child_process');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- Načtení .env -----------------------------------------------------------
@@ -103,6 +104,12 @@ async function generateCover(setId, set, genAI) {
 
     fs.writeFileSync(outFile, Buffer.from(imgPart.inlineData.data, 'base64'));
     console.log(`  Uloženo: ${path.relative(ROOT, outFile)}`);
+
+    // Generuj optimalizovaný thumb (700px, quality 80) pro použití na homepage
+    const thumbFile = path.join(outDir, 'cover-thumb.jpg');
+    execSync(`sips -s format jpeg -s formatOptions 80 -Z 700 "${outFile}" --out "${thumbFile}"`, { stdio: 'pipe' });
+    const thumbSize = Math.round(fs.statSync(thumbFile).size / 1024);
+    console.log(`  Thumb: ${path.relative(ROOT, thumbFile)} (${thumbSize} KB)`);
 
     markCoverInWordsJs(setId);
     console.log(`  words.js: cover: true přidáno`);
