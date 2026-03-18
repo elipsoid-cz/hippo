@@ -101,7 +101,7 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - **Sety:** přidat/upravit/smazat set; dynamické řádky slov (1–n); datum setu = unikátní klíč (`YYYY-MM-DD`), předvyplněno dnešním datem
 - **Commit:** atomický přes GitHub Git Trees API (5 kroků) přes Worker proxy, zároveň bumps verze v `index.html`
 - **Validace překladů:** Levenshtein similarita ≥ 60 % = varování; probíhá při ukládání, ne kontinuálně
-- **Cover:** tlačítko Cover zobrazí stávající obrázek, pak nabídne regeneraci přes GitHub Actions (`generate-cover.yml`)
+- **Cover:** tlačítko Cover zobrazí stávající obrázek, pak nabídne regeneraci přes GitHub Actions (`generate-cover.yml`); po dispatchnutí workflow se v modalu zobrazuje live stav (polling GitHub API každých 5 s, max 3 min); při auto-triggeru po uložení nového setu běží polling na pozadí a stav se zobrazuje v persistentním banneru dole na stránce
 - **Leaderboard:** načítá z Firebase (přímo, ne přes Worker), umožňuje mazat jednotlivé záznamy i celý set
 - **Konstanty:** `REPO = 'elipsoid-cz/hippo'`, `BRANCH = 'main'`, `WORKER_URL = 'https://hippo-admin-api.hippobee.workers.dev'`
 
@@ -115,7 +115,7 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
   - `GET /auth/check` — ověří platnost JWT
 - **Bezpečnost:**
   - Login rate limiting: KV-based, 5 pokusů / 15 min per IP
-  - GitHub proxy scoping: povolené jen cesty `/repos/elipsoid-cz/hippo/contents/`, `.../git/`, `.../actions/workflows/generate-cover.yml/dispatches`
+  - GitHub proxy scoping: povolené jen cesty `/repos/elipsoid-cz/hippo/contents/`, `.../git/`, `.../actions/workflows/generate-cover.yml/dispatches`, `.../actions/workflows/generate-cover.yml/runs`, `.../actions/runs/`
   - Gemini denní limit: max 10 volání/den (konfigurovatelné v `GEMINI_DAILY_LIMIT`)
   - Requesty musí mít `Origin` header (browser) nebo `X-Hippo-Client: admin` header
   - JWT: HMAC-SHA256, 2h platnost, stateless
@@ -141,5 +141,5 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.7.0**
+- Aktuální verze: **v1.7.1**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!

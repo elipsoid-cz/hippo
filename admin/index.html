@@ -688,6 +688,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
 ══════════════════════════════════════════════════ -->
 <div id="toast-container"></div>
 
+<!-- ══════════════════════════════════════════════════
+     COVER BACKGROUND STATUS BANNER
+══════════════════════════════════════════════════ -->
+<div id="cover-bg-status" style="display:none; position:fixed; bottom:1.25rem; left:50%; transform:translateX(-50%); z-index:9000; background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:0.75rem 1.25rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); display:none; align-items:center; gap:0.75rem; font-size:0.9rem; min-width:280px; max-width:420px;">
+    <span id="cover-bg-icon" style="font-size:1.2rem;">🖼</span>
+    <span id="cover-bg-text" style="flex:1; color:var(--text-muted);"></span>
+    <a id="cover-bg-link" href="#" target="_blank" style="display:none; font-size:0.8rem; color:var(--accent); white-space:nowrap;"></a>
+    <button id="cover-bg-open" style="display:none; padding:0.25rem 0.6rem; font-size:0.78rem;" class="btn btn-secondary" onclick=""></button>
+    <button onclick="_closeCoverBgBanner()" style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:1rem; padding:0; line-height:1;">✕</button>
+</div>
+
 <script>
 'use strict';
 
@@ -725,6 +736,12 @@ let editingId   = null;   // null = new, string = editing existing
 let wordsJsSha  = '';     // current file SHA for words.js
 let indexHtmlSha = '';    // current file SHA for index.html
 let wordsJsRaw  = '';     // full raw content of words.js
+
+// Cover polling state
+let _coverPollTimer  = null;  // setInterval handle
+let _coverPollRunId  = null;  // GitHub run ID once discovered
+let _coverPollSetId  = null;  // which set is being polled
+let _coverPollStart  = 0;     // Date.now() when polling started
 
 // ══════════════════════════════════════════════════════════
 //  Toast
@@ -1664,9 +1681,10 @@ async function _commitSave(newSetsData, newWordsJsRaw, idVal) {
 
         // Auto-trigger cover generation for new sets
         if (isNew) {
+            const dispatchedAt = Date.now();
             try {
                 await _dispatchCoverWorkflow(idVal);
-                toast(`🖼 Cover pro ${idVal} se generuje na pozadí (~1 min)`, 'info', 7000);
+                _startBgCoverPoll(idVal, dispatchedAt);
             } catch (e) {
                 toast('Cover workflow se nepodařilo spustit: ' + e.message, 'warning', 6000);
                 console.warn('Cover trigger error:', e);
@@ -1728,7 +1746,6 @@ function triggerCover(id) {
 
     const body = document.getElementById('cover-modal-body');
     if (set.cover) {
-        // Cover exists — show image from GitHub Pages
         const coverUrl = `../english/spelling-bees/${id}/cover.jpg?t=${Date.now()}`;
         body.innerHTML = `
             <img src="${coverUrl}" alt="Cover" style="max-width:100%; border-radius:var(--radius); max-height:280px; object-fit:cover;"
@@ -1738,10 +1755,13 @@ function triggerCover(id) {
         body.innerHTML = `<div style="padding:2rem; color:var(--text-muted);">Tento set nemá žádný cover obrázek.</div>`;
     }
 
+    document.getElementById('cover-generate-btn').disabled = false;
+    document.getElementById('cover-generate-btn').textContent = '🖼 Vygenerovat nový cover';
     document.getElementById('cover-modal').classList.add('open');
 }
 
 function closeCoverModal() {
+    _stopCoverPoll();
     document.getElementById('cover-modal').classList.remove('open');
     _coverSetId = null;
 }
@@ -1766,21 +1786,239 @@ async function _dispatchCoverWorkflow(id) {
     }
 }
 
+// ── Cover polling engine ──────────────────────────────────
+
+function _stopCoverPoll() {
+    if (_coverPollTimer) { clearInterval(_coverPollTimer); _coverPollTimer = null; }
+    _coverPollRunId = null;
+    _coverPollSetId = null;
+    _coverPollStart = 0;
+}
+
+function _ghRunUrl(runId) {
+    return `https://github.com/${REPO}/actions/runs/${runId}`;
+}
+
+function _ghWorkflowUrl() {
+    return `https://github.com/${REPO}/actions/workflows/generate-cover.yml`;
+}
+
+// callbacks: { onStatus(status, runId), onSuccess(runId), onFailure(runId, conclusion), onTimeout(), onAuthError() }
+function _pollCoverWorkflow(setId, dispatchedAt, callbacks) {
+    _stopCoverPoll();
+    _coverPollSetId = setId;
+    _coverPollStart = Date.now();
+
+    const DISCOVERY_TIMEOUT = 30_000;  // 30s to find the run
+    const TOTAL_TIMEOUT     = 180_000; // 3min total
+    const INTERVAL          = 5_000;   // 5s between polls
+
+    async function tick() {
+        const elapsed = Date.now() - _coverPollStart;
+        if (elapsed > TOTAL_TIMEOUT) {
+            _stopCoverPoll();
+            callbacks.onTimeout();
+            return;
+        }
+
+        try {
+            if (!_coverPollRunId) {
+                // Discovery phase — find the run
+                const resp = await fetch(
+                    `${WORKER_URL}/github/repos/${REPO}/actions/workflows/generate-cover.yml/runs?per_page=10`,
+                    { headers: ghHeaders() }
+                );
+                if (resp.status === 401) { _stopCoverPoll(); callbacks.onAuthError(); return; }
+                if (!resp.ok) return; // transient error, retry next tick
+                const data = await resp.json();
+                const cutoff = dispatchedAt - 10_000;
+                const run = (data.workflow_runs || []).find(r =>
+                    r.head_branch === BRANCH && new Date(r.created_at).getTime() >= cutoff
+                );
+                if (run) {
+                    _coverPollRunId = run.id;
+                    callbacks.onStatus(run.status, run.id);
+                } else if (elapsed > DISCOVERY_TIMEOUT) {
+                    _stopCoverPoll();
+                    callbacks.onTimeout();
+                }
+            } else {
+                // Status phase — poll the specific run
+                const resp = await fetch(
+                    `${WORKER_URL}/github/repos/${REPO}/actions/runs/${_coverPollRunId}`,
+                    { headers: ghHeaders() }
+                );
+                if (resp.status === 401) { _stopCoverPoll(); callbacks.onAuthError(); return; }
+                if (!resp.ok) return;
+                const run = await resp.json();
+                callbacks.onStatus(run.status, run.id);
+                if (run.status === 'completed') {
+                    _stopCoverPoll();
+                    if (run.conclusion === 'success') callbacks.onSuccess(run.id);
+                    else callbacks.onFailure(run.id, run.conclusion);
+                }
+            }
+        } catch (e) {
+            console.warn('Cover poll error:', e);
+            // transient — retry next tick
+        }
+    }
+
+    tick(); // immediate first check
+    _coverPollTimer = setInterval(tick, INTERVAL);
+}
+
+// ── Modal-based status panel ──────────────────────────────
+
+function _showModalStatus(icon, text, linkHtml = '') {
+    const body = document.getElementById('cover-modal-body');
+    body.innerHTML = `
+        <div style="padding:1.5rem 0;">
+            <div style="font-size:2rem; margin-bottom:0.6rem;">${icon}</div>
+            <div id="cover-status-text" style="font-size:0.95rem; color:var(--text-muted);">${text}</div>
+            <div id="cover-status-link" style="margin-top:0.75rem; font-size:0.82rem;">${linkHtml}</div>
+        </div>`;
+}
+
+function _updateModalStatusText(icon, text) {
+    const body = document.getElementById('cover-modal-body');
+    const iconEl = body.querySelector('div[style*="font-size:2rem"]');
+    const textEl = document.getElementById('cover-status-text');
+    if (iconEl) iconEl.textContent = icon;
+    if (textEl) textEl.textContent = text;
+}
+
+function reloadCoverPreview(id) {
+    const coverUrl = `../english/spelling-bees/${id}/cover.jpg?t=${Date.now()}`;
+    const body = document.getElementById('cover-modal-body');
+    body.innerHTML = `
+        <img src="${coverUrl}" alt="Cover" style="max-width:100%; border-radius:var(--radius); max-height:280px; object-fit:cover;"
+             onerror="this.outerHTML='<div style=\\'color:var(--text-muted);padding:1rem;\\'>Obrázek nelze načíst (nasazení může trvat minutu).</div>'" />
+        <div style="margin-top:0.6rem; color:var(--text-muted); font-size:0.82rem;">Nový cover obrázek</div>`;
+    document.getElementById('cover-generate-btn').disabled = false;
+    document.getElementById('cover-generate-btn').textContent = '🖼 Vygenerovat znovu';
+    setsData[id] = setsData[id] || {};
+    setsData[id].cover = true;
+    renderSetsTable();
+}
+
 async function doTriggerCover() {
     if (!_coverSetId) return;
     const id = _coverSetId;
-    closeCoverModal();
+    const btn = document.getElementById('cover-generate-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Spouštím…';
 
-    showLoading(`Spouštím workflow pro ${id}…`);
+    const dispatchedAt = Date.now();
     try {
         await _dispatchCoverWorkflow(id);
-        toast(`🖼 Workflow pro cover ${id} byl spuštěn. Zkontroluj Actions na GitHubu.`, 'success', 6000);
     } catch (e) {
-        toast('Chyba při spouštění workflow: ' + e.message, 'error', 8000);
-        console.error(e);
-    } finally {
-        hideLoading();
+        btn.disabled = false;
+        btn.textContent = '🖼 Vygenerovat nový cover';
+        _showModalStatus('❌', `Chyba: ${e.message}`);
+        return;
     }
+
+    _showModalStatus('⏳', 'Čekám na spuštění workflow…');
+
+    _pollCoverWorkflow(id, dispatchedAt, {
+        onStatus(status) {
+            const labels = { queued: 'Workflow ve frontě…', in_progress: 'Generuji cover obrázek…' };
+            const icons  = { queued: '⏳', in_progress: '🔄' };
+            if (labels[status]) _updateModalStatusText(icons[status] || '⏳', labels[status]);
+        },
+        onSuccess(runId) {
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit na GitHubu</a>`;
+            _showModalStatus('✅', 'Cover úspěšně vygenerován!', `
+                ${link} &nbsp;·&nbsp;
+                <button class="btn btn-secondary" style="padding:0.25rem 0.7rem; font-size:0.82rem;" onclick="reloadCoverPreview('${id}')">Načíst obrázek</button>
+            `);
+            btn.disabled = false;
+            btn.textContent = '🖼 Vygenerovat znovu';
+        },
+        onFailure(runId, conclusion) {
+            _showModalStatus('❌', `Generování selhalo (${conclusion}).`,
+                `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit log na GitHubu</a>`);
+            btn.disabled = false;
+            btn.textContent = '🖼 Zkusit znovu';
+        },
+        onTimeout() {
+            _showModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
+                `<a href="${_ghWorkflowUrl()}" target="_blank">Zkontroluj Actions na GitHubu</a>`);
+            btn.disabled = false;
+            btn.textContent = '🖼 Vygenerovat znovu';
+        },
+        onAuthError() {
+            _showModalStatus('🔒', 'Relace vypršela — přihlaš se znovu.');
+            btn.disabled = false;
+            btn.textContent = '🖼 Vygenerovat nový cover';
+        },
+    });
+}
+
+// ── Background banner (for auto-trigger) ─────────────────
+
+function _showCoverBgBanner(icon, text, linkText, linkHref, openSetId, autoDismissMs) {
+    const banner  = document.getElementById('cover-bg-status');
+    const iconEl  = document.getElementById('cover-bg-icon');
+    const textEl  = document.getElementById('cover-bg-text');
+    const linkEl  = document.getElementById('cover-bg-link');
+    const openBtn = document.getElementById('cover-bg-open');
+
+    iconEl.textContent = icon;
+    textEl.textContent = text;
+
+    if (linkText && linkHref) {
+        linkEl.textContent = linkText;
+        linkEl.href = linkHref;
+        linkEl.style.display = 'inline';
+    } else {
+        linkEl.style.display = 'none';
+    }
+
+    if (openSetId) {
+        openBtn.style.display = 'inline-block';
+        openBtn.textContent = 'Otevřít';
+        openBtn.onclick = () => { _closeCoverBgBanner(); triggerCover(openSetId); };
+    } else {
+        openBtn.style.display = 'none';
+    }
+
+    banner.style.display = 'flex';
+    if (autoDismissMs) setTimeout(_closeCoverBgBanner, autoDismissMs);
+}
+
+function _closeCoverBgBanner() {
+    document.getElementById('cover-bg-status').style.display = 'none';
+}
+
+function _startBgCoverPoll(id, dispatchedAt) {
+    _showCoverBgBanner('🔄', `Generuji cover pro ${id}…`, null, null, null, null);
+
+    _pollCoverWorkflow(id, dispatchedAt, {
+        onStatus(status) {
+            if (status === 'in_progress')
+                _showCoverBgBanner('🔄', `Generuji cover pro ${id}…`, null, null, null, null);
+        },
+        onSuccess(runId) {
+            _showCoverBgBanner('✅', `Cover pro ${id} vygenerován!`,
+                'GitHub', _ghRunUrl(runId), id, 10_000);
+            setsData[id] = setsData[id] || {};
+            setsData[id].cover = true;
+            renderSetsTable();
+        },
+        onFailure(runId, conclusion) {
+            _showCoverBgBanner('❌', `Cover pro ${id} selhal (${conclusion}).`,
+                'Zobrazit log', _ghRunUrl(runId), null, null);
+        },
+        onTimeout() {
+            _showCoverBgBanner('⚠️', `Cover pro ${id}: zkontroluj GitHub Actions.`,
+                'Zobrazit', _ghWorkflowUrl(), null, null);
+        },
+        onAuthError() {
+            _closeCoverBgBanner();
+        },
+    });
 }
 
 // ══════════════════════════════════════════════════════════

@@ -25,6 +25,8 @@ const GITHUB_PATH_PREFIXES = [
   `/repos/${ALLOWED_REPO}/contents/`,
   `/repos/${ALLOWED_REPO}/git/`,
   `/repos/${ALLOWED_REPO}/actions/workflows/generate-cover.yml/dispatches`,
+  `/repos/${ALLOWED_REPO}/actions/workflows/generate-cover.yml/runs`,
+  `/repos/${ALLOWED_REPO}/actions/runs/`,
 ];
 
 // ── Helpers ──────────────────────────────────────────────
