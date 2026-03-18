@@ -478,29 +478,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
         <h1>🦛 Hippo Admin</h1>
         <p class="subtitle">Přihlaste se pro správu spelling bee setů</p>
 
-        <div class="login-note">
-            Výchozí heslo: <code>hippo-admin</code> — změň SHA-256 hash v <code>admin/index.html</code>
-        </div>
-
         <div class="form-group">
             <label>Heslo</label>
             <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-
-        <div class="form-group">
-            <label>GitHub Personal Access Token (PAT)</label>
-            <input type="password" id="login-pat" placeholder="ghp_..." autocomplete="off" />
-            <div style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
-                Potřebuje právo <code>repo</code> + <code>workflow</code>. Uloženo pouze v sessionStorage.
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Gemini API Key <span style="color:var(--text-muted); font-weight:normal;">(volitelné — pro AI generování)</span></label>
-            <input type="password" id="login-gemini" placeholder="AIzaSy..." autocomplete="off" />
-            <div style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
-                Pro automatické překlady a popisky. Uloženo pouze v sessionStorage.
-            </div>
         </div>
 
         <button class="btn btn-primary" id="login-btn" style="width:100%; justify-content:center; margin-top:0.5rem;" onclick="doLogin()">
@@ -718,9 +698,11 @@ const REPO       = 'elipsoid-cz/hippo';
 const BRANCH     = 'main';
 const WORDS_PATH = 'english/spelling-bees/shared/words.js';
 const INDEX_PATH = 'index.html';
-const API_BASE   = 'https://api.github.com';
 
-const PASSWORD_HASH = '999e31176676d713e0e43ea55ff24a72adec053b0405a72583c5107e28910e80';
+// Worker proxy — tokeny zůstávají na serveru, nikdy se nedostanou do prohlížeče
+// Pro lokální vývoj Workeru: cd worker && npm run dev → odkomentuj řádek níže
+// const WORKER_URL = 'http://localhost:8787';
+const WORKER_URL = 'https://hippo-admin-api.hippobee.workers.dev';
 
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyB-prvqJmm0Jdt4kQAA-f5BQXmaC8VGP44",
@@ -734,21 +716,15 @@ const FIREBASE_CONFIG = {
 // ══════════════════════════════════════════════════════════
 //  State
 // ══════════════════════════════════════════════════════════
-let ghPAT       = '';
-let geminiKey   = '';
+let jwt             = '';     // JWT token from Worker
+let geminiAvailable = false; // whether Gemini key is configured on Worker
+let geminiDailyUsed = 0;     // Gemini API calls used today
+let geminiDailyLimit = 10;   // max Gemini API calls per day
 let setsData    = {};     // { "2026-03-23": { title, date, description, words[], translations{} }, ... }
 let editingId   = null;   // null = new, string = editing existing
 let wordsJsSha  = '';     // current file SHA for words.js
 let indexHtmlSha = '';    // current file SHA for index.html
 let wordsJsRaw  = '';     // full raw content of words.js
-
-// ══════════════════════════════════════════════════════════
-//  Utilities — SHA-256
-// ══════════════════════════════════════════════════════════
-async function sha256hex(str) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 // ══════════════════════════════════════════════════════════
 //  Toast
@@ -785,11 +761,9 @@ async function doLogin() {
     errEl.style.display = 'none';
 
     const password = document.getElementById('login-password').value;
-    const pat      = document.getElementById('login-pat').value.trim();
-    const gemini   = document.getElementById('login-gemini').value.trim();
 
-    if (!password || !pat) {
-        errEl.textContent = 'Vyplňte heslo i GitHub PAT.';
+    if (!password) {
+        errEl.textContent = 'Vyplňte heslo.';
         errEl.style.display = 'block';
         return;
     }
@@ -798,36 +772,42 @@ async function doLogin() {
     btn.innerHTML = '<span class="spinner"></span> Ověřuji…';
 
     try {
-        const hash = await sha256hex(password);
-        if (hash !== PASSWORD_HASH) {
-            errEl.textContent = 'Nesprávné heslo.';
-            errEl.style.display = 'block';
-            btn.disabled = false;
-            btn.textContent = 'Přihlásit se';
-            return;
-        }
-
-        // Validate PAT by hitting GitHub API
-        const resp = await fetch(`${API_BASE}/user`, {
-            headers: { Authorization: `Bearer ${pat}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        // Authenticate via Worker — password verified server-side
+        const resp = await fetch(`${WORKER_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Hippo-Client': 'admin' },
+            body: JSON.stringify({ password })
         });
 
+        const data = await resp.json();
+
         if (!resp.ok) {
-            errEl.textContent = 'Neplatný GitHub PAT — ověření selhalo.';
+            errEl.textContent = data.error || 'Přihlášení selhalo.';
             errEl.style.display = 'block';
             btn.disabled = false;
             btn.textContent = 'Přihlásit se';
             return;
         }
 
-        ghPAT = pat;
-        sessionStorage.setItem('hippo_admin_pat', pat);
-        geminiKey = gemini;
-        if (gemini) sessionStorage.setItem('hippo_admin_gemini', gemini);
+        jwt = data.token;
+        sessionStorage.setItem('hippo_admin_jwt', jwt);
+
+        // Check if Gemini is available on the Worker
+        try {
+            const geminiResp = await fetch(`${WORKER_URL}/gemini/status`, {
+                headers: workerHeaders()
+            });
+            const geminiData = await geminiResp.json();
+            geminiAvailable = geminiData.available;
+            geminiDailyUsed = geminiData.dailyUsed || 0;
+            geminiDailyLimit = geminiData.dailyLimit || 10;
+        } catch (_) {
+            geminiAvailable = false;
+        }
 
         showApp();
     } catch (e) {
-        errEl.textContent = 'Chyba: ' + e.message;
+        errEl.textContent = 'Nelze se připojit k serveru: ' + e.message;
         errEl.style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Přihlásit se';
@@ -842,10 +822,9 @@ document.addEventListener('keydown', e => {
 });
 
 function doLogout() {
-    sessionStorage.removeItem('hippo_admin_pat');
-    sessionStorage.removeItem('hippo_admin_gemini');
-    ghPAT = '';
-    geminiKey = '';
+    sessionStorage.removeItem('hippo_admin_jwt');
+    jwt = '';
+    geminiAvailable = false;
     document.getElementById('app-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
 }
@@ -858,20 +837,28 @@ function showApp() {
 }
 
 // ══════════════════════════════════════════════════════════
-//  GitHub API helpers
+//  Worker API helpers
 // ══════════════════════════════════════════════════════════
-function ghHeaders(extra = {}) {
+// All API calls go through the Cloudflare Worker proxy.
+// X-Hippo-Client header is required by the Worker to block raw curl attacks.
+function workerHeaders(extra = {}) {
     return {
-        Authorization: `Bearer ${ghPAT}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
+        'X-Hippo-Client': 'admin',
+        Authorization: `Bearer ${jwt}`,
         'Content-Type': 'application/json',
         ...extra
     };
 }
 
+function ghHeaders(extra = {}) {
+    return workerHeaders({
+        Accept: 'application/vnd.github+json',
+        ...extra
+    });
+}
+
 async function ghGet(path) {
-    const resp = await fetch(`${API_BASE}/repos/${REPO}/contents/${path}?ref=${BRANCH}`, {
+    const resp = await fetch(`${WORKER_URL}/github/repos/${REPO}/contents/${path}?ref=${BRANCH}`, {
         headers: ghHeaders()
     });
     if (!resp.ok) throw new Error(`GitHub GET ${path}: ${resp.status} ${resp.statusText}`);
@@ -880,7 +867,7 @@ async function ghGet(path) {
 
 async function ghPut(path, content, sha, message) {
     const body = { message, content: btoa(unescape(encodeURIComponent(content))), sha, branch: BRANCH };
-    const resp = await fetch(`${API_BASE}/repos/${REPO}/contents/${path}`, {
+    const resp = await fetch(`${WORKER_URL}/github/repos/${REPO}/contents/${path}`, {
         method: 'PUT',
         headers: ghHeaders(),
         body: JSON.stringify(body)
@@ -896,7 +883,7 @@ async function ghPut(path, content, sha, message) {
 async function ghCommitMultiple(files, message) {
     // 1. Get HEAD
     showLoading('GitHub: načítám HEAD… (1/5)');
-    const refResp = await fetch(`${API_BASE}/repos/${REPO}/git/ref/heads/${BRANCH}`, {
+    const refResp = await fetch(`${WORKER_URL}/github/repos/${REPO}/git/ref/heads/${BRANCH}`, {
         headers: ghHeaders()
     });
     if (!refResp.ok) throw new Error('Failed to get HEAD ref');
@@ -905,7 +892,7 @@ async function ghCommitMultiple(files, message) {
 
     // 2. Get current tree SHA
     showLoading('GitHub: načítám strom… (2/5)');
-    const commitResp = await fetch(`${API_BASE}/repos/${REPO}/git/commits/${headSha}`, {
+    const commitResp = await fetch(`${WORKER_URL}/github/repos/${REPO}/git/commits/${headSha}`, {
         headers: ghHeaders()
     });
     if (!commitResp.ok) throw new Error('Failed to get commit');
@@ -921,7 +908,7 @@ async function ghCommitMultiple(files, message) {
         content: f.content
     }));
 
-    const newTreeResp = await fetch(`${API_BASE}/repos/${REPO}/git/trees`, {
+    const newTreeResp = await fetch(`${WORKER_URL}/github/repos/${REPO}/git/trees`, {
         method: 'POST',
         headers: ghHeaders(),
         body: JSON.stringify({ base_tree: treeSha, tree: treeItems })
@@ -934,7 +921,7 @@ async function ghCommitMultiple(files, message) {
 
     // 4. Create commit
     showLoading('GitHub: vytvářím commit… (4/5)');
-    const newCommitResp = await fetch(`${API_BASE}/repos/${REPO}/git/commits`, {
+    const newCommitResp = await fetch(`${WORKER_URL}/github/repos/${REPO}/git/commits`, {
         method: 'POST',
         headers: ghHeaders(),
         body: JSON.stringify({ message, tree: newTree.sha, parents: [headSha] })
@@ -947,7 +934,7 @@ async function ghCommitMultiple(files, message) {
 
     // 5. Update ref
     showLoading('GitHub: aktualizuji větev… (5/5)');
-    const updateResp = await fetch(`${API_BASE}/repos/${REPO}/git/refs/heads/${BRANCH}`, {
+    const updateResp = await fetch(`${WORKER_URL}/github/repos/${REPO}/git/refs/heads/${BRANCH}`, {
         method: 'PATCH',
         headers: ghHeaders(),
         body: JSON.stringify({ sha: newCommit.sha })
@@ -1186,7 +1173,7 @@ function openSetEditor(id) {
         const genBtn = document.getElementById('generate-btn');
         genBtn.disabled = true;
         genBtn.innerHTML = '✨ Vygenerovat set';
-        document.getElementById('generate-hint').textContent = geminiKey ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč nebyl zadán při přihlášení';
+        document.getElementById('generate-hint').textContent = geminiAvailable ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč není nastaven na serveru';
         // Empty word grid
         const grid = document.getElementById('words-grid');
         grid.innerHTML = '';
@@ -1326,7 +1313,7 @@ function onWordsTextareaInput() {
     if (words.length === 0) {
         hint.textContent = '';
         btn.disabled = true;
-        hintTxt.textContent = geminiKey ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč nebyl zadán při přihlášení';
+        hintTxt.textContent = geminiAvailable ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč není nastaven na serveru';
         return;
     }
 
@@ -1334,12 +1321,15 @@ function onWordsTextareaInput() {
     const label = words.length === 1 ? 'slovo' : words.length < 5 ? 'slova' : 'slov';
     hint.innerHTML = `<span style="color:${color}">${words.length} ${label}${words.length !== 10 ? ' (doporučeno 10)' : ' ✓'}</span>`;
 
-    if (!geminiKey) {
+    if (!geminiAvailable) {
         btn.disabled = true;
-        hintTxt.textContent = 'Gemini API klíč nebyl zadán při přihlášení';
+        hintTxt.textContent = 'Gemini API klíč není nastaven na serveru';
+    } else if (geminiDailyUsed >= geminiDailyLimit) {
+        btn.disabled = true;
+        hintTxt.textContent = `Denní limit Gemini dosažen (${geminiDailyUsed}/${geminiDailyLimit})`;
     } else {
         btn.disabled = false;
-        hintTxt.textContent = '';
+        hintTxt.textContent = `Gemini: ${geminiDailyUsed}/${geminiDailyLimit} volání dnes`;
     }
 }
 
@@ -1348,7 +1338,8 @@ async function generateSetWithAI() {
     const title = document.getElementById('ed-title').value.trim() || 'Spelling Bee';
 
     if (words.length === 0) { toast('Zadejte alespoň jedno slovo', 'warning'); return; }
-    if (!geminiKey) { toast('Gemini API klíč není nastaven', 'warning'); return; }
+    if (!geminiAvailable) { toast('Gemini API klíč není nastaven na serveru', 'warning'); return; }
+    if (geminiDailyUsed >= geminiDailyLimit) { toast(`Denní limit Gemini dosažen (${geminiDailyLimit})`, 'warning'); return; }
 
     const btn = document.getElementById('generate-btn');
     btn.disabled = true;
@@ -1379,22 +1370,22 @@ Respond ONLY with valid JSON:
   }
 }`;
 
-        const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { responseMimeType: 'application/json' }
-                })
-            }
-        );
+        const resp = await fetch(`${WORKER_URL}/gemini/generate`, {
+            method: 'POST',
+            headers: workerHeaders(),
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: 'application/json' }
+            })
+        });
 
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
             throw new Error(`Gemini API: ${resp.status} ${err.error?.message || resp.statusText}`);
         }
+
+        // Increment local counter (Worker already incremented server-side)
+        geminiDailyUsed++;
 
         const data = await resp.json();
         const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1761,7 +1752,7 @@ document.getElementById('cover-modal').addEventListener('click', function(e) {
 
 async function _dispatchCoverWorkflow(id) {
     const resp = await fetch(
-        `${API_BASE}/repos/${REPO}/actions/workflows/generate-cover.yml/dispatches`,
+        `${WORKER_URL}/github/repos/${REPO}/actions/workflows/generate-cover.yml/dispatches`,
         {
             method: 'POST',
             headers: ghHeaders(),
@@ -2084,13 +2075,40 @@ function fixValidationIssue(setId, word) {
 // ══════════════════════════════════════════════════════════
 //  Session restore on page load
 // ══════════════════════════════════════════════════════════
-(function init() {
-    const savedPAT = sessionStorage.getItem('hippo_admin_pat');
-    const savedGemini = sessionStorage.getItem('hippo_admin_gemini');
-    if (savedGemini) geminiKey = savedGemini;
-    if (savedPAT) {
-        ghPAT = savedPAT;
+(async function init() {
+    const savedJwt = sessionStorage.getItem('hippo_admin_jwt');
+    if (!savedJwt) return;
+
+    // Verify the JWT is still valid by calling the Worker
+    try {
+        // Need jwt set temporarily for workerHeaders() to work
+        jwt = savedJwt;
+        const resp = await fetch(`${WORKER_URL}/auth/check`, {
+            headers: workerHeaders()
+        });
+        if (!resp.ok) {
+            jwt = '';
+            sessionStorage.removeItem('hippo_admin_jwt');
+            return;
+        }
+
+        // Check Gemini availability
+        try {
+            const geminiResp = await fetch(`${WORKER_URL}/gemini/status`, {
+                headers: workerHeaders()
+            });
+            const geminiData = await geminiResp.json();
+            geminiAvailable = geminiData.available;
+            geminiDailyUsed = geminiData.dailyUsed || 0;
+            geminiDailyLimit = geminiData.dailyLimit || 10;
+        } catch (_) {
+            geminiAvailable = false;
+        }
+
         showApp();
+    } catch (_) {
+        // Worker not reachable — stay on login screen
+        sessionStorage.removeItem('hippo_admin_jwt');
     }
 })();
 </script>

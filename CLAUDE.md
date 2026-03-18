@@ -94,15 +94,41 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 
 ## Admin rozhraní (`admin/index.html`)
 - **URL:** `elipsoid-cz.github.io/hippo/admin/` (nebo `localhost:3000/admin/`)
-- **Přihlášení:** heslo (SHA-256 hash v `PASSWORD_HASH`) + GitHub PAT (právo `repo`)
-- **PAT** se ukládá pouze do `sessionStorage` — smaže se zavřením záložky
+- **Přihlášení:** pouze heslo — tokeny (GitHub PAT, Gemini key) zůstávají na Cloudflare Worker serveru
+- **Backend:** Cloudflare Worker (`worker/`) — proxy pro GitHub API a Gemini API
+- **JWT session:** po přihlášení Worker vrátí JWT (2h platnost), uložený v `sessionStorage`
 - **Záložky:** Sety | Leaderboard | Validace
 - **Sety:** přidat/upravit/smazat set; dynamické řádky slov (1–n); datum setu = unikátní klíč (`YYYY-MM-DD`), předvyplněno dnešním datem
-- **Commit:** atomický přes GitHub Git Trees API (5 kroků), zároveň bumps verze v `index.html`
+- **Commit:** atomický přes GitHub Git Trees API (5 kroků) přes Worker proxy, zároveň bumps verze v `index.html`
 - **Validace překladů:** Levenshtein similarita ≥ 60 % = varování; probíhá při ukládání, ne kontinuálně
 - **Cover:** tlačítko Cover zobrazí stávající obrázek, pak nabídne regeneraci přes GitHub Actions (`generate-cover.yml`)
-- **Leaderboard:** načítá z Firebase, umožňuje mazat jednotlivé záznamy i celý set
-- **Konstanty:** `REPO = 'elipsoid-cz/hippo'`, `BRANCH = 'main'`, `PASSWORD_HASH` = SHA-256 hesla "hippo-admin"
+- **Leaderboard:** načítá z Firebase (přímo, ne přes Worker), umožňuje mazat jednotlivé záznamy i celý set
+- **Konstanty:** `REPO = 'elipsoid-cz/hippo'`, `BRANCH = 'main'`, `WORKER_URL = 'https://hippo-admin-api.hippobee.workers.dev'`
+
+### Cloudflare Worker (`worker/`)
+- **Účel:** bezpečný proxy — GitHub PAT a Gemini API key nikdy neopustí server
+- **Endpointy:**
+  - `POST /auth/login` — ověří heslo (rate-limited: 5 pokusů / 15 min per IP), vrátí JWT
+  - `ANY /github/**` — proxy na `api.github.com`, injektuje PAT (scoped jen na `elipsoid-cz/hippo`)
+  - `POST /gemini/generate` — proxy na Gemini API, injektuje API key (denní limit: 10 volání)
+  - `GET /gemini/status` — vrátí zda je Gemini key nakonfigurovaný + denní usage
+  - `GET /auth/check` — ověří platnost JWT
+- **Bezpečnost:**
+  - Login rate limiting: KV-based, 5 pokusů / 15 min per IP
+  - GitHub proxy scoping: povolené jen cesty `/repos/elipsoid-cz/hippo/contents/`, `.../git/`, `.../actions/workflows/generate-cover.yml/dispatches`
+  - Gemini denní limit: max 10 volání/den (konfigurovatelné v `GEMINI_DAILY_LIMIT`)
+  - Requesty musí mít `Origin` header (browser) nebo `X-Hippo-Client: admin` header
+  - JWT: HMAC-SHA256, 2h platnost, stateless
+- **KV namespace:** `RATE_LIMIT` — pro login rate limiting a Gemini denní počítadlo
+- **Secrets** (nastavit přes `wrangler secret put`):
+  - `PASSWORD_HASH` — SHA-256 hex hash hesla
+  - `GITHUB_PAT` — GitHub Personal Access Token (repo + workflow)
+  - `GEMINI_KEY` — Gemini API key (volitelné)
+  - `JWT_SECRET` — náhodný string pro podepisování JWT (min 32 znaků)
+- **CORS:** povolené originy: `elipsoid-cz.github.io`, `localhost:*`
+- **Dev:** `cd worker && npm install && npm run dev` (port 8787)
+- **Deploy:** `cd worker && npm run deploy`
+- **KV setup:** `cd worker && npx wrangler kv namespace create RATE_LIMIT` → vložit ID do `wrangler.toml`
 
 ### GitHub Actions — generate-cover.yml
 - Spouští se přes `workflow_dispatch` s inputem `set_id`
@@ -115,5 +141,5 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.6.3**
+- Aktuální verze: **v1.7.0**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!

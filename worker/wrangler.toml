@@ -1,0 +1,20 @@
+name = "hippo-admin-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# KV namespace for rate limiting (login attempts, Gemini daily usage).
+# Create with: wrangler kv namespace create RATE_LIMIT
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "2dc2600c8db8480d9ce14ddec3f3afd1"
+
+# For local dev (wrangler dev), use a preview namespace:
+# wrangler kv namespace create RATE_LIMIT --preview
+# Then add: preview_id = "..."
+
+# Secrets (set via `wrangler secret put`):
+# PASSWORD_HASH  — SHA-256 hex hash of admin password
+# GITHUB_PAT     — GitHub Personal Access Token (repo + workflow)
+# GEMINI_KEY     — Gemini API key (optional, for AI translations)
+# JWT_SECRET     — Random string for signing JWTs (min 32 chars)
