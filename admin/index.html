@@ -491,7 +491,15 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
             <label>GitHub Personal Access Token (PAT)</label>
             <input type="password" id="login-pat" placeholder="ghp_..." autocomplete="off" />
             <div style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
-                Potřebuje právo <code>repo</code>. Uloženo pouze v sessionStorage (smaže se zavřením záložky).
+                Potřebuje právo <code>repo</code> + <code>workflow</code>. Uloženo pouze v sessionStorage.
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Gemini API Key <span style="color:var(--text-muted); font-weight:normal;">(volitelné — pro AI generování)</span></label>
+            <input type="password" id="login-gemini" placeholder="AIzaSy..." autocomplete="off" />
+            <div style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                Pro automatické překlady a popisky. Uloženo pouze v sessionStorage.
             </div>
         </div>
 
@@ -591,7 +599,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
             <div class="form-group">
                 <label>Datum setu *</label>
-                <input type="date" id="ed-id" onchange="syncEditorId()" />
+                <input type="date" id="ed-id" onchange="onDateChange()" />
             </div>
             <div class="form-group">
                 <label>Titulek *</label>
@@ -599,20 +607,46 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Popis</label>
-            <input type="text" id="ed-description" placeholder="People, places and things" />
+        <div id="ed-description-group">
+            <div class="form-group">
+                <label>Popis</label>
+                <input type="text" id="ed-description" placeholder="People, places and things" />
+            </div>
+            <hr />
         </div>
 
-        <hr />
+        <!-- Textarea sekce — jen pro nový set -->
+        <div id="words-textarea-section" style="display:none;">
+            <div class="form-group">
+                <label>Anglická slova <span style="color:var(--text-muted); font-weight:normal;">(oddělená čárkou nebo mezerou)</span></label>
+                <textarea id="ed-words-textarea" rows="3"
+                          placeholder="adventure, bicycle, champion, ..."
+                          oninput="onWordsTextareaInput()"></textarea>
+                <div id="words-count-hint" style="color:var(--text-muted); font-size:0.8rem; margin-top:0.35rem; min-height:1.2em;"></div>
+            </div>
 
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
-            <div class="section-title" style="margin-bottom:0;">Slova</div>
-            <button class="btn btn-sm" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="addWordRow()">+ Přidat slovo</button>
+            <div id="ai-suspicious-words" style="display:none; margin-bottom:1rem;"></div>
+
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
+                <button class="btn btn-primary" id="generate-btn" onclick="generateSetWithAI()" disabled>
+                    ✨ Vygenerovat set
+                </button>
+                <span id="generate-hint" style="color:var(--text-muted); font-size:0.82rem;">Zadejte slova pro aktivaci</span>
+            </div>
+
+            <hr />
         </div>
 
-        <div class="words-grid" id="words-grid">
-            <!-- filled by JS -->
+        <!-- Word rows — pro editaci nebo po AI generování -->
+        <div id="words-rows-section">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+                <div class="section-title" style="margin-bottom:0;">Slova &amp; překlady</div>
+                <button class="btn btn-sm" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="addWordRow()">+ Přidat slovo</button>
+            </div>
+
+            <div class="words-grid" id="words-grid">
+                <!-- filled by JS -->
+            </div>
         </div>
 
         <!-- Validation panel — shown before save if issues exist -->
@@ -701,6 +735,7 @@ const FIREBASE_CONFIG = {
 //  State
 // ══════════════════════════════════════════════════════════
 let ghPAT       = '';
+let geminiKey   = '';
 let setsData    = {};     // { "2026-03-23": { title, date, description, words[], translations{} }, ... }
 let editingId   = null;   // null = new, string = editing existing
 let wordsJsSha  = '';     // current file SHA for words.js
@@ -751,6 +786,7 @@ async function doLogin() {
 
     const password = document.getElementById('login-password').value;
     const pat      = document.getElementById('login-pat').value.trim();
+    const gemini   = document.getElementById('login-gemini').value.trim();
 
     if (!password || !pat) {
         errEl.textContent = 'Vyplňte heslo i GitHub PAT.';
@@ -786,6 +822,8 @@ async function doLogin() {
 
         ghPAT = pat;
         sessionStorage.setItem('hippo_admin_pat', pat);
+        geminiKey = gemini;
+        if (gemini) sessionStorage.setItem('hippo_admin_gemini', gemini);
 
         showApp();
     } catch (e) {
@@ -805,7 +843,9 @@ document.addEventListener('keydown', e => {
 
 function doLogout() {
     sessionStorage.removeItem('hippo_admin_pat');
+    sessionStorage.removeItem('hippo_admin_gemini');
     ghPAT = '';
+    geminiKey = '';
     document.getElementById('app-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
 }
@@ -1123,8 +1163,35 @@ function openSetEditor(id) {
     // Disable ID field when editing
     document.getElementById('ed-id').disabled = !!id;
 
-    // Build word rows
-    buildWordRows(set);
+    const textareaSection = document.getElementById('words-textarea-section');
+    const rowsSection = document.getElementById('words-rows-section');
+    if (id) {
+        // Edit mode: show description, hide textarea, show word rows pre-filled
+        document.getElementById('ed-description-group').style.display = 'block';
+        textareaSection.style.display = 'none';
+        rowsSection.style.display = 'block';
+        buildWordRows(set);
+    } else {
+        // New mode: auto-fill date + title, show textarea, hide word rows until generation
+        const nextMonday = nextAvailableMonday();
+        document.getElementById('ed-id').value = nextMonday;
+        document.getElementById('ed-title').value = titleFromDate(nextMonday);
+
+        document.getElementById('ed-description-group').style.display = 'none';
+        textareaSection.style.display = 'block';
+        rowsSection.style.display = 'none';
+        document.getElementById('ed-words-textarea').value = '';
+        document.getElementById('words-count-hint').textContent = '';
+        document.getElementById('ai-suspicious-words').style.display = 'none';
+        const genBtn = document.getElementById('generate-btn');
+        genBtn.disabled = true;
+        genBtn.innerHTML = '✨ Vygenerovat set';
+        document.getElementById('generate-hint').textContent = geminiKey ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč nebyl zadán při přihlášení';
+        // Empty word grid
+        const grid = document.getElementById('words-grid');
+        grid.innerHTML = '';
+        _rowIdx = 0;
+    }
 
     document.getElementById('editor-modal').classList.add('open');
 }
@@ -1210,6 +1277,164 @@ function updateRemoveButtons() {
     });
 }
 
+// ══════════════════════════════════════════════════════════
+//  Date & title helpers (nový set)
+// ══════════════════════════════════════════════════════════
+function nextAvailableMonday() {
+    const today = new Date();
+    const day = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const offset = day === 0 ? 1 : (8 - day) % 7; // days until next Monday (0 if today is Monday)
+    const candidate = new Date(today);
+    candidate.setDate(today.getDate() + offset);
+
+    // Find a Monday not already taken
+    while (true) {
+        const dateStr = candidate.toISOString().slice(0, 10);
+        if (!setsData[dateStr]) return dateStr;
+        candidate.setDate(candidate.getDate() + 7);
+    }
+}
+
+function titleFromDate(dateStr) {
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    const [, month, day] = dateStr.split('-').map(Number);
+    return `${months[month - 1]} ${day}`;
+}
+
+function onDateChange() {
+    if (editingId) return; // only auto-fill for new sets
+    const dateVal = document.getElementById('ed-id').value;
+    if (dateVal) {
+        document.getElementById('ed-title').value = titleFromDate(dateVal);
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Words textarea (nový set)
+// ══════════════════════════════════════════════════════════
+function parseWordsTextarea(text) {
+    return text.split(/[\s,]+/).map(w => w.trim()).filter(Boolean);
+}
+
+function onWordsTextareaInput() {
+    const words = parseWordsTextarea(document.getElementById('ed-words-textarea').value);
+    const hint = document.getElementById('words-count-hint');
+    const btn = document.getElementById('generate-btn');
+    const hintTxt = document.getElementById('generate-hint');
+
+    if (words.length === 0) {
+        hint.textContent = '';
+        btn.disabled = true;
+        hintTxt.textContent = geminiKey ? 'Zadejte slova pro aktivaci' : 'Gemini API klíč nebyl zadán při přihlášení';
+        return;
+    }
+
+    const color = words.length === 10 ? 'var(--success)' : words.length > 10 ? 'var(--warning)' : 'var(--text-muted)';
+    const label = words.length === 1 ? 'slovo' : words.length < 5 ? 'slova' : 'slov';
+    hint.innerHTML = `<span style="color:${color}">${words.length} ${label}${words.length !== 10 ? ' (doporučeno 10)' : ' ✓'}</span>`;
+
+    if (!geminiKey) {
+        btn.disabled = true;
+        hintTxt.textContent = 'Gemini API klíč nebyl zadán při přihlášení';
+    } else {
+        btn.disabled = false;
+        hintTxt.textContent = '';
+    }
+}
+
+async function generateSetWithAI() {
+    const words = parseWordsTextarea(document.getElementById('ed-words-textarea').value);
+    const title = document.getElementById('ed-title').value.trim() || 'Spelling Bee';
+
+    if (words.length === 0) { toast('Zadejte alespoň jedno slovo', 'warning'); return; }
+    if (!geminiKey) { toast('Gemini API klíč není nastaven', 'warning'); return; }
+
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;width:14px;height:14px;border-width:2px;"></span> Generuji…';
+
+    try {
+        const prompt = `You are helping create a Czech spelling bee app for school children.
+
+Given these English words for a set titled "${title}": ${words.join(', ')}
+
+Tasks:
+1. Check if all words are valid English words. Flag any that look misspelled or are not real English words.
+2. Provide a short English description (3-5 words) capturing the theme of these words.
+3. Provide a Czech translation for each word.
+
+CRITICAL RULES for Czech translations:
+- Translation must NOT reveal the English spelling
+- No cognates: designer→designér ❌ use návrhář ✅
+- No same-root words: fantastic→fantastický ❌ use úžasný ✅
+- Use real Czech equivalents or descriptive phrases
+
+Respond ONLY with valid JSON:
+{
+  "suspiciousWords": [],
+  "description": "...",
+  "translations": {
+    "word1": "czech translation 1"
+  }
+}`;
+
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: 'application/json' }
+                })
+            }
+        );
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(`Gemini API: ${resp.status} ${err.error?.message || resp.statusText}`);
+        }
+
+        const data = await resp.json();
+        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!jsonText) throw new Error('Gemini nevrátil žádná data');
+
+        const result = JSON.parse(jsonText);
+
+        // Suspicious words warning
+        const suspDiv = document.getElementById('ai-suspicious-words');
+        if (result.suspiciousWords && result.suspiciousWords.length > 0) {
+            suspDiv.innerHTML = `<div style="background:rgba(243,156,18,0.1); border:1px solid var(--warning); border-radius:var(--radius); padding:0.65rem 0.85rem; font-size:0.85rem; margin-bottom:0.5rem;">
+                ⚠️ <strong>Podezřelá slova (zkontrolujte překlepy):</strong> ${result.suspiciousWords.map(escHtml).join(', ')}
+            </div>`;
+            suspDiv.style.display = 'block';
+        } else {
+            suspDiv.style.display = 'none';
+        }
+
+        // Fill description
+        if (result.description) {
+            document.getElementById('ed-description').value = result.description;
+        }
+
+        // Build word rows from AI result and reveal the sections
+        const capitalizedWords = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+        buildWordRows({ words: capitalizedWords, translations: result.translations || {} });
+        document.getElementById('ed-description-group').style.display = 'block';
+        document.getElementById('words-rows-section').style.display = 'block';
+
+        toast('AI překlady vygenerovány — zkontrolujte podobnost!', 'success');
+
+    } catch (e) {
+        toast('Chyba při generování: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Vygenerovat set';
+    }
+}
+
 function onWordInput(input, idx) {
     checkSimilarity(idx);
 }
@@ -1222,9 +1447,6 @@ function titleCaseInput(input) {
     checkSimilarity(parseInt(input.dataset.idx, 10));
 }
 
-function syncEditorId() {
-    // When editing a new set, auto-populate from date
-}
 
 // ══════════════════════════════════════════════════════════
 //  Levenshtein similarity
@@ -1380,7 +1602,14 @@ async function saveSet() {
         }
     });
 
-    if (words.length === 0) { toast('Přidejte alespoň jedno slovo', 'warning'); return; }
+    if (words.length === 0) {
+        if (!editingId && parseWordsTextarea(document.getElementById('ed-words-textarea').value).length > 0) {
+            toast('Klikněte nejprve na "✨ Vygenerovat set" pro přidání překladů.', 'warning', 5000);
+        } else {
+            toast('Přidejte alespoň jedno slovo', 'warning');
+        }
+        return;
+    }
 
     // Build new set object — preserve cover flag when editing
     const existingSet = setsData[idVal] || {};
@@ -1441,6 +1670,17 @@ async function _commitSave(newSetsData, newWordsJsRaw, idVal) {
 
         // Reload data to get fresh SHAs
         await loadAllData();
+
+        // Auto-trigger cover generation for new sets
+        if (isNew) {
+            try {
+                await _dispatchCoverWorkflow(idVal);
+                toast(`🖼 Cover pro ${idVal} se generuje na pozadí (~1 min)`, 'info', 7000);
+            } catch (e) {
+                toast('Cover workflow se nepodařilo spustit: ' + e.message, 'warning', 6000);
+                console.warn('Cover trigger error:', e);
+            }
+        }
 
     } catch (e) {
         toast('Chyba při ukládání: ' + e.message, 'error', 8000);
@@ -1519,6 +1759,22 @@ document.getElementById('cover-modal').addEventListener('click', function(e) {
     if (e.target === this) closeCoverModal();
 });
 
+async function _dispatchCoverWorkflow(id) {
+    const resp = await fetch(
+        `${API_BASE}/repos/${REPO}/actions/workflows/generate-cover.yml/dispatches`,
+        {
+            method: 'POST',
+            headers: ghHeaders(),
+            body: JSON.stringify({ ref: BRANCH, inputs: { set_id: id } })
+        }
+    );
+
+    if (!resp.ok && resp.status !== 204) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(`${resp.status}: ${err.message || resp.statusText}`);
+    }
+}
+
 async function doTriggerCover() {
     if (!_coverSetId) return;
     const id = _coverSetId;
@@ -1526,21 +1782,8 @@ async function doTriggerCover() {
 
     showLoading(`Spouštím workflow pro ${id}…`);
     try {
-        const resp = await fetch(
-            `${API_BASE}/repos/${REPO}/actions/workflows/generate-cover.yml/dispatches`,
-            {
-                method: 'POST',
-                headers: ghHeaders(),
-                body: JSON.stringify({ ref: BRANCH, inputs: { set_id: id } })
-            }
-        );
-
-        if (resp.status === 204 || resp.ok) {
-            toast(`Workflow pro cover ${id} byl spuštěn. Zkontroluj Actions na GitHubu.`, 'success', 6000);
-        } else {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(`${resp.status}: ${err.message || resp.statusText}`);
-        }
+        await _dispatchCoverWorkflow(id);
+        toast(`🖼 Workflow pro cover ${id} byl spuštěn. Zkontroluj Actions na GitHubu.`, 'success', 6000);
     } catch (e) {
         toast('Chyba při spouštění workflow: ' + e.message, 'error', 8000);
         console.error(e);
@@ -1843,6 +2086,8 @@ function fixValidationIssue(setId, word) {
 // ══════════════════════════════════════════════════════════
 (function init() {
     const savedPAT = sessionStorage.getItem('hippo_admin_pat');
+    const savedGemini = sessionStorage.getItem('hippo_admin_gemini');
+    if (savedGemini) geminiKey = savedGemini;
     if (savedPAT) {
         ghPAT = savedPAT;
         showApp();

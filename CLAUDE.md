@@ -7,6 +7,7 @@ Hippo 🦛 is an interactive web application for English language learning with 
 - `index.html` - Main landing page with links to all exercises
 - `english/spelling-bees/` - Spelling practice exercises with audio
 - `english/grammar/` - Grammar exercises (irregular verbs, comparatives)
+- `admin/index.html` - Admin rozhraní pro správu spelling bee setů
 
 ## Technology Stack
 - HTML5
@@ -43,7 +44,9 @@ Each exercise should have:
 - `english/spelling-bees/YYYY-MM-DD/index.html` - pouze redirect na `../play/?set=YYYY-MM-DD`
 
 ### Přidání nového spelling bee setu
-Stačí přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage se zobrazí automaticky, NEW badge se přiřadí nejnovějšímu setu (nejvyšší klíč).
+**Preferovaný způsob:** přes admin rozhraní (`admin/index.html`).
+
+Manuálně: přidat entry do `SPELLING_BEE_SETS` v `words.js` — karta na homepage se zobrazí automaticky, NEW badge se přiřadí nejnovějšímu setu (nejvyšší klíč).
 
 **Po přidání setu vždy vygenerovat cover obrázek:**
 ```bash
@@ -89,11 +92,28 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - **Bug (opraveno):** Save panel z předchozí All Words hry zůstával v DOM a byl znovu viditelný po Practice Mistakes → `showFinal()` nyní vždy odstraní starý panel na začátku
 - **Security:** Firebase API key is intentionally public; security enforced by Firestore rules; key restricted to `elipsoid-cz.github.io/*`
 
+## Admin rozhraní (`admin/index.html`)
+- **URL:** `elipsoid-cz.github.io/hippo/admin/` (nebo `localhost:3000/admin/`)
+- **Přihlášení:** heslo (SHA-256 hash v `PASSWORD_HASH`) + GitHub PAT (právo `repo`)
+- **PAT** se ukládá pouze do `sessionStorage` — smaže se zavřením záložky
+- **Záložky:** Sety | Leaderboard | Validace
+- **Sety:** přidat/upravit/smazat set; dynamické řádky slov (1–n); datum setu = unikátní klíč (`YYYY-MM-DD`), předvyplněno dnešním datem
+- **Commit:** atomický přes GitHub Git Trees API (5 kroků), zároveň bumps verze v `index.html`
+- **Validace překladů:** Levenshtein similarita ≥ 60 % = varování; probíhá při ukládání, ne kontinuálně
+- **Cover:** tlačítko Cover zobrazí stávající obrázek, pak nabídne regeneraci přes GitHub Actions (`generate-cover.yml`)
+- **Leaderboard:** načítá z Firebase, umožňuje mazat jednotlivé záznamy i celý set
+- **Konstanty:** `REPO = 'elipsoid-cz/hippo'`, `BRANCH = 'main'`, `PASSWORD_HASH` = SHA-256 hesla "hippo-admin"
+
+### GitHub Actions — generate-cover.yml
+- Spouští se přes `workflow_dispatch` s inputem `set_id`
+- Používá `GEMINI_API_KEY` z GitHub Secrets (neukládat nikam jinam!)
+- Výsledek: `english/spelling-bees/{setId}/cover.jpg` + `cover-thumb.jpg`, auto-commit
+
 ## Placená API volání
 - **DŮLEŽITÉ:** Před každým voláním API, které stojí peníze (Gemini image generation, Firebase paid tier, apod.), se vždy zeptej uživatele a počkej na jeho souhlas. Nespouštěj taková volání automaticky.
 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.3.1**
+- Aktuální verze: **v1.6.3**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!
