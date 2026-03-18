@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hippo Admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --card2: #0f3460;
+    --accent: #e94560;
+    --accent-hover: #c73652;
+    --text: #eaeaea;
+    --text-muted: #8899aa;
+    --border: #2a3a5a;
+    --success: #27ae60;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+    --info: #3498db;
+    --input-bg: #0d1b2e;
+    --radius: 8px;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+}
+
+/* ── Login ── */
+#login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.login-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-card h1 {
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+    color: var(--accent);
+}
+
+.login-card p.subtitle {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+}
+
+.login-note {
+    background: rgba(233,69,96,0.1);
+    border: 1px solid rgba(233,69,96,0.3);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.login-note code {
+    font-family: monospace;
+    color: var(--accent);
+}
+
+/* ── App shell ── */
+#app-screen { display: none; flex-direction: column; min-height: 100vh; }
+
+header.app-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header.app-header h1 { font-size: 1.2rem; color: var(--accent); flex: 1; }
+header.app-header .header-meta { color: var(--text-muted); font-size: 0.8rem; }
+
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    padding: 0 1.5rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content { display: none; padding: 1.5rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+.tab-content.active { display: block; }
+
+/* ── Form elements ── */
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+}
+
+input[type="date"] { color-scheme: dark; }
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+}
+
+input::placeholder { color: var(--text-muted); }
+
+/* ── Buttons ── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: opacity 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:not(:disabled):hover { opacity: 0.88; }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-warning { background: var(--warning); color: #fff; }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+
+/* ── Cards ── */
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+thead tr { border-bottom: 2px solid var(--border); }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-success { background: rgba(39,174,96,0.15); color: var(--success); }
+.badge-danger  { background: rgba(231,76,60,0.15);  color: var(--danger); }
+.badge-warning { background: rgba(243,156,18,0.15); color: var(--warning); }
+.badge-info    { background: rgba(52,152,219,0.15); color: var(--info); }
+
+/* ── Modal ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 760px;
+    padding: 1.75rem;
+    margin: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h2 { font-size: 1.15rem; }
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.modal-close:hover { background: var(--border); color: var(--text); }
+
+/* ── Word rows ── */
+.words-grid {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.word-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 1fr auto auto;
+    gap: 0.5rem;
+    align-items: center;
+}
+.btn-remove-word {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: var(--radius);
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.btn-remove-word:hover { border-color: var(--danger); color: var(--danger); }
+.btn-remove-word:disabled { opacity: 0.25; cursor: default; }
+
+.word-row-num {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: right;
+}
+
+.similarity-warning {
+    color: var(--warning);
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+    grid-column: 2 / 4;
+    display: none;
+}
+
+.word-row.has-warning .similarity-warning { display: block; }
+
+/* ── Toast ── */
+#toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    max-width: 340px;
+    pointer-events: all;
+    animation: slideIn 0.2s ease;
+    border-left: 4px solid var(--info);
+}
+
+.toast.success { border-left-color: var(--success); }
+.toast.error   { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warning); }
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(120%); opacity: 0; }
+}
+
+/* ── Spinner ── */
+.spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.loading-overlay.open { display: flex; }
+.loading-overlay span { color: var(--text); font-size: 0.9rem; }
+
+/* ── Validation ── */
+.validation-item {
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.4rem;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.validation-item.warn  { background: rgba(243,156,18,0.1); border-left: 3px solid var(--warning); }
+.validation-item.error { background: rgba(231,76,60,0.1);  border-left: 3px solid var(--danger); }
+.validation-item.ok    { background: rgba(39,174,96,0.1);  border-left: 3px solid var(--success); }
+.validation-icon { flex-shrink: 0; }
+.validation-meta { color: var(--text-muted); font-size: 0.8rem; }
+.validation-actions { display: flex; gap: 0.4rem; flex-shrink: 0; margin-left: 1rem; align-self: flex-start; margin-top: 0.05rem; }
+
+/* ── Sets list ── */
+.sets-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.set-row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* ── Leaderboard ── */
+.lb-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.rank-num {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.rank-num.gold   { color: #f1c40f; }
+.rank-num.silver { color: #bdc3c7; }
+.rank-num.bronze { color: #cd7f32; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .word-row { grid-template-columns: 20px 1fr 1fr; }
+    .word-row .btn-sm { display: none; }
+    .tab-btn { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
+}
+
+/* ── Misc ── */
+.section-title {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.section-title:first-child { margin-top: 0; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════ -->
+<div id="login-screen">
+    <div class="login-card">
+        <h1>🦛 Hippo Admin</h1>
+        <p class="subtitle">Přihlaste se pro správu spelling bee setů</p>
+
+        <div class="login-note">
+            Výchozí heslo: <code>hippo-admin</code> — změň SHA-256 hash v <code>admin/index.html</code>
+        </div>
+
+        <div class="form-group">
+            <label>Heslo</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+
+        <div class="form-group">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="login-pat" placeholder="ghp_..." autocomplete="off" />
+            <div style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                Potřebuje právo <code>repo</code>. Uloženo pouze v sessionStorage (smaže se zavřením záložky).
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="login-btn" style="width:100%; justify-content:center; margin-top:0.5rem;" onclick="doLogin()">
+            Přihlásit se
+        </button>
+
+        <div id="login-error" style="color: var(--danger); font-size:0.85rem; margin-top:0.75rem; display:none;"></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════════════ -->
+<div id="app-screen">
+    <header class="app-header">
+        <h1>🦛 Hippo Admin</h1>
+        <span class="header-meta" id="header-version"></span>
+        <button class="btn btn-secondary btn-sm" onclick="doLogout()">Odhlásit</button>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('sets', this)">📚 Sety</button>
+        <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
+        <button class="tab-btn" onclick="switchTab('validation', this)" id="tab-validation-btn">✅ Validace</button>
+    </div>
+
+    <!-- ── Tab: Sety ── -->
+    <div class="tab-content active" id="tab-sets">
+        <div class="sets-toolbar">
+            <h2 style="font-size:1rem;">Spelling bee sety</h2>
+            <button class="btn btn-primary" onclick="openSetEditor(null)">+ Nový set</button>
+        </div>
+        <div class="card" style="padding:0;">
+            <div class="table-wrap">
+                <table id="sets-table">
+                    <thead>
+                        <tr>
+                            <th>Set ID</th>
+                            <th>Titulek</th>
+                            <th>Popis</th>
+                            <th style="text-align:center;">Slov</th>
+                            <th style="text-align:center;">Cover</th>
+                            <th>Akce</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sets-tbody">
+                        <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tab: Leaderboard ── -->
+    <div class="tab-content" id="tab-leaderboard">
+        <div class="lb-toolbar">
+            <select id="lb-set-select" style="max-width:250px;">
+                <option value="">— Vyberte set —</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadLeaderboard()">Načíst</button>
+            <button class="btn btn-danger btn-sm" id="lb-delete-all-btn" style="display:none;" onclick="deleteAllScores()">Smazat vše</button>
+        </div>
+        <div class="card" style="padding:0.75rem; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
+            ⚠️ Pro mazání záznamů musí Firestore rules dovolovat delete (výchozí pravidla to blokují pro neautorizované požadavky).
+        </div>
+        <div id="lb-content">
+            <div class="empty-state">
+                <div class="empty-icon">🏆</div>
+                <div>Vyberte set a klikněte na Načíst</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tab: Validace ── -->
+    <div class="tab-content" id="tab-validation">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+            <h2 style="font-size:1rem;">Výsledky validace</h2>
+            <button class="btn btn-secondary btn-sm" onclick="runValidation()">Znovu spustit</button>
+        </div>
+        <div id="validation-content">
+            <div class="empty-state"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SET EDITOR MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="editor-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="editor-title">Nový set</h2>
+            <button class="modal-close" onclick="closeSetEditor()">✕</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label>Datum setu *</label>
+                <input type="date" id="ed-id" onchange="syncEditorId()" />
+            </div>
+            <div class="form-group">
+                <label>Titulek *</label>
+                <input type="text" id="ed-title" placeholder="March 23" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Popis</label>
+            <input type="text" id="ed-description" placeholder="People, places and things" />
+        </div>
+
+        <hr />
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+            <div class="section-title" style="margin-bottom:0;">Slova</div>
+            <button class="btn btn-sm" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="addWordRow()">+ Přidat slovo</button>
+        </div>
+
+        <div class="words-grid" id="words-grid">
+            <!-- filled by JS -->
+        </div>
+
+        <!-- Validation panel — shown before save if issues exist -->
+        <div id="editor-validation-panel" style="display:none; margin-top:1.25rem;">
+            <div style="font-weight:600; margin-bottom:0.5rem;">Nalezeny problémy před uložením:</div>
+            <div id="editor-validation-content"></div>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1rem;">
+                <button class="btn btn-secondary" onclick="hideValidationPanel()">Zpět k opravě</button>
+                <button class="btn btn-primary" id="editor-force-save-btn" style="display:none;" onclick="doSave()">
+                    Uložit přesto
+                </button>
+            </div>
+        </div>
+
+        <div id="editor-footer" style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+            <button class="btn btn-secondary" onclick="closeSetEditor()">Zrušit</button>
+            <button class="btn btn-primary" id="editor-save-btn" onclick="saveSet()">
+                <span id="editor-save-label">Uložit</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     COVER MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="cover-modal">
+    <div class="modal" style="max-width:520px;">
+        <div class="modal-header">
+            <h2 id="cover-modal-title">Cover obrázek</h2>
+            <button class="modal-close" onclick="closeCoverModal()">✕</button>
+        </div>
+
+        <div id="cover-modal-body" style="text-align:center; padding:0.5rem 0 1.25rem;">
+            <!-- filled by JS -->
+        </div>
+
+        <div style="background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.25); border-radius:var(--radius); padding:0.75rem 1rem; font-size:0.82rem; color:var(--text-muted); margin-bottom:1.25rem;">
+            ⚠️ Generování nového coveru volá <strong>Gemini API</strong> a stojí peníze. Pokračuj jen pokud jsi si tím jistý.
+        </div>
+
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="closeCoverModal()">Zavřít</button>
+            <button class="btn btn-warning" id="cover-generate-btn" onclick="doTriggerCover()">🖼 Vygenerovat nový cover</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LOADING OVERLAY
+══════════════════════════════════════════════════ -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner" style="width:40px;height:40px;border-width:4px;"></div>
+    <span id="loading-msg">Načítám…</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════
+//  Constants
+// ══════════════════════════════════════════════════════════
+const REPO       = 'elipsoid-cz/hippo';
+const BRANCH     = 'main';
+const WORDS_PATH = 'english/spelling-bees/shared/words.js';
+const INDEX_PATH = 'index.html';
+const API_BASE   = 'https://api.github.com';
+
+const PASSWORD_HASH = '999e31176676d713e0e43ea55ff24a72adec053b0405a72583c5107e28910e80';
+
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB-prvqJmm0Jdt4kQAA-f5BQXmaC8VGP44",
+    authDomain: "hippo-cz.firebaseapp.com",
+    projectId: "hippo-cz",
+    storageBucket: "hippo-cz.firebasestorage.app",
+    messagingSenderId: "881228649401",
+    appId: "1:881228649401:web:2d81c97045155687a51c68"
+};
+
+// ══════════════════════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════════════════════
+let ghPAT       = '';
+let setsData    = {};     // { "2026-03-23": { title, date, description, words[], translations{} }, ... }
+let editingId   = null;   // null = new, string = editing existing
+let wordsJsSha  = '';     // current file SHA for words.js
+let indexHtmlSha = '';    // current file SHA for index.html
+let wordsJsRaw  = '';     // full raw content of words.js
+
+// ══════════════════════════════════════════════════════════
+//  Utilities — SHA-256
+// ══════════════════════════════════════════════════════════
+async function sha256hex(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  Toast
+// ══════════════════════════════════════════════════════════
+function toast(msg, type = 'info', duration = 4000) {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => {
+        el.style.animation = 'slideOut 0.25s ease forwards';
+        el.addEventListener('animationend', () => el.remove());
+    }, duration);
+}
+
+// ══════════════════════════════════════════════════════════
+//  Loading overlay
+// ══════════════════════════════════════════════════════════
+function showLoading(msg = 'Načítám…') {
+    document.getElementById('loading-msg').textContent = msg;
+    document.getElementById('loading-overlay').classList.add('open');
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════════════
+//  Auth
+// ══════════════════════════════════════════════════════════
+async function doLogin() {
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+
+    const password = document.getElementById('login-password').value;
+    const pat      = document.getElementById('login-pat').value.trim();
+
+    if (!password || !pat) {
+        errEl.textContent = 'Vyplňte heslo i GitHub PAT.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Ověřuji…';
+
+    try {
+        const hash = await sha256hex(password);
+        if (hash !== PASSWORD_HASH) {
+            errEl.textContent = 'Nesprávné heslo.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Přihlásit se';
+            return;
+        }
+
+        // Validate PAT by hitting GitHub API
+        const resp = await fetch(`${API_BASE}/user`, {
+            headers: { Authorization: `Bearer ${pat}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        });
+
+        if (!resp.ok) {
+            errEl.textContent = 'Neplatný GitHub PAT — ověření selhalo.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Přihlásit se';
+            return;
+        }
+
+        ghPAT = pat;
+        sessionStorage.setItem('hippo_admin_pat', pat);
+
+        showApp();
+    } catch (e) {
+        errEl.textContent = 'Chyba: ' + e.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Přihlásit se';
+    }
+}
+
+// Allow Enter key on login
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') {
+        doLogin();
+    }
+});
+
+function doLogout() {
+    sessionStorage.removeItem('hippo_admin_pat');
+    ghPAT = '';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.flexDirection = 'column';
+    loadAllData();
+}
+
+// ══════════════════════════════════════════════════════════
+//  GitHub API helpers
+// ══════════════════════════════════════════════════════════
+function ghHeaders(extra = {}) {
+    return {
+        Authorization: `Bearer ${ghPAT}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+        ...extra
+    };
+}
+
+async function ghGet(path) {
+    const resp = await fetch(`${API_BASE}/repos/${REPO}/contents/${path}?ref=${BRANCH}`, {
+        headers: ghHeaders()
+    });
+    if (!resp.ok) throw new Error(`GitHub GET ${path}: ${resp.status} ${resp.statusText}`);
+    return resp.json();
+}
+
+async function ghPut(path, content, sha, message) {
+    const body = { message, content: btoa(unescape(encodeURIComponent(content))), sha, branch: BRANCH };
+    const resp = await fetch(`${API_BASE}/repos/${REPO}/contents/${path}`, {
+        method: 'PUT',
+        headers: ghHeaders(),
+        body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(`GitHub PUT ${path}: ${resp.status} ${err.message || resp.statusText}`);
+    }
+    return resp.json();
+}
+
+// Atomic multi-file commit using Git Trees API
+async function ghCommitMultiple(files, message) {
+    // 1. Get HEAD
+    showLoading('GitHub: načítám HEAD… (1/5)');
+    const refResp = await fetch(`${API_BASE}/repos/${REPO}/git/ref/heads/${BRANCH}`, {
+        headers: ghHeaders()
+    });
+    if (!refResp.ok) throw new Error('Failed to get HEAD ref');
+    const refData = await refResp.json();
+    const headSha = refData.object.sha;
+
+    // 2. Get current tree SHA
+    showLoading('GitHub: načítám strom… (2/5)');
+    const commitResp = await fetch(`${API_BASE}/repos/${REPO}/git/commits/${headSha}`, {
+        headers: ghHeaders()
+    });
+    if (!commitResp.ok) throw new Error('Failed to get commit');
+    const commitData = await commitResp.json();
+    const treeSha = commitData.tree.sha;
+
+    // 3. Create new tree
+    showLoading('GitHub: vytvářím nový strom… (3/5)');
+    const treeItems = files.map(f => ({
+        path: f.path,
+        mode: '100644',
+        type: 'blob',
+        content: f.content
+    }));
+
+    const newTreeResp = await fetch(`${API_BASE}/repos/${REPO}/git/trees`, {
+        method: 'POST',
+        headers: ghHeaders(),
+        body: JSON.stringify({ base_tree: treeSha, tree: treeItems })
+    });
+    if (!newTreeResp.ok) {
+        const err = await newTreeResp.json().catch(() => ({}));
+        throw new Error('Failed to create tree: ' + (err.message || newTreeResp.statusText));
+    }
+    const newTree = await newTreeResp.json();
+
+    // 4. Create commit
+    showLoading('GitHub: vytvářím commit… (4/5)');
+    const newCommitResp = await fetch(`${API_BASE}/repos/${REPO}/git/commits`, {
+        method: 'POST',
+        headers: ghHeaders(),
+        body: JSON.stringify({ message, tree: newTree.sha, parents: [headSha] })
+    });
+    if (!newCommitResp.ok) {
+        const err = await newCommitResp.json().catch(() => ({}));
+        throw new Error('Failed to create commit: ' + (err.message || newCommitResp.statusText));
+    }
+    const newCommit = await newCommitResp.json();
+
+    // 5. Update ref
+    showLoading('GitHub: aktualizuji větev… (5/5)');
+    const updateResp = await fetch(`${API_BASE}/repos/${REPO}/git/refs/heads/${BRANCH}`, {
+        method: 'PATCH',
+        headers: ghHeaders(),
+        body: JSON.stringify({ sha: newCommit.sha })
+    });
+    if (!updateResp.ok) {
+        const err = await updateResp.json().catch(() => ({}));
+        throw new Error('Failed to update ref: ' + (err.message || updateResp.statusText));
+    }
+
+    return newCommit;
+}
+
+// ══════════════════════════════════════════════════════════
+//  words.js parser & serializer
+// ══════════════════════════════════════════════════════════
+function parseWordsJs(raw) {
+    // Extract the SPELLING_BEE_SETS object literal
+    const start = raw.indexOf('var SPELLING_BEE_SETS = {');
+    if (start === -1) throw new Error('Cannot find SPELLING_BEE_SETS in words.js');
+
+    // Find matching closing brace
+    let depth = 0;
+    let end = -1;
+    for (let i = start + 'var SPELLING_BEE_SETS = '.length; i < raw.length; i++) {
+        if (raw[i] === '{') depth++;
+        else if (raw[i] === '}') {
+            depth--;
+            if (depth === 0) { end = i; break; }
+        }
+    }
+    if (end === -1) throw new Error('Cannot find end of SPELLING_BEE_SETS');
+
+    const objStr = raw.slice(start + 'var SPELLING_BEE_SETS = '.length, end + 1);
+
+    // Safely evaluate using Function
+    // eslint-disable-next-line no-new-func
+    const sets = new Function(`return (${objStr})`)();
+    return sets;
+}
+
+function serializeSets(sets) {
+    const lines = [];
+    lines.push('var SPELLING_BEE_SETS = {');
+
+    const keys = Object.keys(sets).sort(); // ascending by date key
+    for (const key of keys) {
+        const s = sets[key];
+        lines.push(`    "${key}": {`);
+        if (s.cover !== undefined) {
+            lines.push(`        cover: ${s.cover},`);
+        }
+        lines.push(`        title: ${JSON.stringify(s.title)},`);
+        lines.push(`        date: ${JSON.stringify(s.date)},`);
+        lines.push(`        description: ${JSON.stringify(s.description)},`);
+        lines.push(`        words: [`);
+        for (const w of s.words) {
+            lines.push(`            ${JSON.stringify(w)},`);
+        }
+        lines.push(`        ],`);
+        lines.push(`        translations: {`);
+        for (const [k, v] of Object.entries(s.translations || {})) {
+            lines.push(`            ${JSON.stringify(k)}: ${JSON.stringify(v)},`);
+        }
+        lines.push(`        },`);
+        lines.push(`    },`);
+    }
+
+    lines.push('};');
+    return lines.join('\n');
+}
+
+function replaceWordsJsBlock(raw, newBlock) {
+    const start = raw.indexOf('var SPELLING_BEE_SETS = {');
+    if (start === -1) throw new Error('Cannot find SPELLING_BEE_SETS in words.js');
+
+    let depth = 0;
+    let end = -1;
+    for (let i = start + 'var SPELLING_BEE_SETS = '.length; i < raw.length; i++) {
+        if (raw[i] === '{') depth++;
+        else if (raw[i] === '}') {
+            depth--;
+            if (depth === 0) { end = i; break; }
+        }
+    }
+    if (end === -1) throw new Error('Cannot find end of SPELLING_BEE_SETS');
+
+    // Also consume trailing semicolon if present
+    let afterEnd = end + 1;
+    if (raw[afterEnd] === ';') afterEnd++;
+
+    return raw.slice(0, start) + newBlock + raw.slice(afterEnd);
+}
+
+// ══════════════════════════════════════════════════════════
+//  index.html version bump
+// ══════════════════════════════════════════════════════════
+function bumpVersion(htmlContent) {
+    return htmlContent.replace(/<small>v(\d+)\.(\d+)\.(\d+)<\/small>/, (match, major, minor, patch) => {
+        const newPatch = parseInt(patch, 10) + 1;
+        return `<small>v${major}.${minor}.${newPatch}</small>`;
+    });
+}
+
+function extractVersion(htmlContent) {
+    const m = htmlContent.match(/<small>v(\d+\.\d+\.\d+)<\/small>/);
+    return m ? m[1] : '?';
+}
+
+// ══════════════════════════════════════════════════════════
+//  Load all data
+// ══════════════════════════════════════════════════════════
+async function loadAllData() {
+    showLoading('Načítám data z GitHubu…');
+    try {
+        // Fetch words.js
+        const wordsFile = await ghGet(WORDS_PATH);
+        wordsJsSha = wordsFile.sha;
+        wordsJsRaw = decodeURIComponent(escape(atob(wordsFile.content)));
+        setsData = parseWordsJs(wordsJsRaw);
+
+        // Fetch index.html for version
+        const indexFile = await ghGet(INDEX_PATH);
+        indexHtmlSha = indexFile.sha;
+        const indexRaw = decodeURIComponent(escape(atob(indexFile.content)));
+        const ver = extractVersion(indexRaw);
+        document.getElementById('header-version').textContent = `v${ver}`;
+
+        // Render everything
+        renderSetsTable();
+        populateLbSelect();
+        runValidation();
+
+    } catch (e) {
+        toast('Chyba při načítání dat: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Tab navigation
+// ══════════════════════════════════════════════════════════
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${id}`).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+//  Sets table
+// ══════════════════════════════════════════════════════════
+function renderSetsTable() {
+    const tbody = document.getElementById('sets-tbody');
+    const keys = Object.keys(setsData).sort().reverse(); // newest first
+
+    if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div>Žádné sety</div></td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = keys.map(key => {
+        const s = setsData[key];
+        const coverBadge = s.cover
+            ? '<span class="badge badge-success">✅ Ano</span>'
+            : '<span class="badge badge-danger">❌ Ne</span>';
+        const wordCount = (s.words || []).length;
+        const countBadge = wordCount === 10
+            ? `<span class="badge badge-success">${wordCount}</span>`
+            : `<span class="badge badge-danger">${wordCount}</span>`;
+
+        return `<tr>
+            <td><code>${key}</code></td>
+            <td>${escHtml(s.title || '')}</td>
+            <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escHtml(s.description || '')}">${escHtml(s.description || '')}</td>
+            <td style="text-align:center;">${countBadge}</td>
+            <td style="text-align:center;">${coverBadge}</td>
+            <td>
+                <div class="set-row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openSetEditor('${key}')">Upravit</button>
+                    <button class="btn btn-warning btn-sm" onclick="triggerCover('${key}')">🖼 Cover</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSet('${key}')">Smazat</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ══════════════════════════════════════════════════════════
+//  Set editor modal
+// ══════════════════════════════════════════════════════════
+function openSetEditor(id) {
+    editingId = id;
+    document.getElementById('editor-title').textContent = id ? `Upravit set: ${id}` : 'Nový set';
+    document.getElementById('editor-save-label').textContent = 'Uložit';
+
+    const set = id ? setsData[id] : null;
+
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('ed-id').value          = set ? set.date : today;
+    document.getElementById('ed-title').value       = set ? (set.title || '') : '';
+    document.getElementById('ed-description').value = set ? (set.description || '') : '';
+
+    // Disable ID field when editing
+    document.getElementById('ed-id').disabled = !!id;
+
+    // Build word rows
+    buildWordRows(set);
+
+    document.getElementById('editor-modal').classList.add('open');
+}
+
+function closeSetEditor() {
+    document.getElementById('editor-modal').classList.remove('open');
+    editingId = null;
+}
+
+// Close modal when clicking overlay
+document.getElementById('editor-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSetEditor();
+});
+
+let _rowIdx = 0;
+
+function buildWordRows(set) {
+    const grid = document.getElementById('words-grid');
+    const words = set ? (set.words || []) : [];
+    const trans = set ? (set.translations || {}) : {};
+    _rowIdx = 0;
+    grid.innerHTML = '';
+    const count = Math.max(words.length, 1);
+    for (let i = 0; i < count; i++) {
+        const word = words[i] || '';
+        const tran = trans[word.toLowerCase()] || '';
+        _appendWordRow(grid, word, tran);
+    }
+    updateRowNumbers();
+    updateRemoveButtons();
+    document.querySelectorAll('#words-grid .word-row').forEach(row => {
+        const idx = parseInt(row.querySelector('.word-en').dataset.idx, 10);
+        checkSimilarity(idx);
+    });
+}
+
+function _appendWordRow(grid, word, tran) {
+    const idx = _rowIdx++;
+    const div = document.createElement('div');
+    div.className = 'word-row';
+    div.id = `word-row-${idx}`;
+    div.innerHTML = `
+        <span class="word-row-num"></span>
+        <input type="text" class="word-en" data-idx="${idx}"
+               placeholder="Anglické slovo"
+               value="${escHtml(word)}"
+               oninput="checkSimilarity(${idx})"
+               onblur="titleCaseInput(this)" />
+        <input type="text" class="word-cs" data-idx="${idx}"
+               placeholder="Český překlad"
+               value="${escHtml(tran)}"
+               oninput="checkSimilarity(${idx})" />
+        <span class="similarity-warning" id="sim-warn-${idx}"></span>
+        <button class="btn-remove-word" onclick="removeWordRow(this)" title="Odebrat">✕</button>`;
+    grid.appendChild(div);
+}
+
+function addWordRow() {
+    const grid = document.getElementById('words-grid');
+    _appendWordRow(grid, '', '');
+    updateRowNumbers();
+    updateRemoveButtons();
+    grid.lastElementChild.querySelector('.word-en').focus();
+}
+
+function removeWordRow(btn) {
+    btn.closest('.word-row').remove();
+    updateRowNumbers();
+    updateRemoveButtons();
+}
+
+function updateRowNumbers() {
+    document.querySelectorAll('#words-grid .word-row .word-row-num').forEach((el, i) => {
+        el.textContent = i + 1;
+    });
+}
+
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('#words-grid .word-row');
+    rows.forEach(row => {
+        const btn = row.querySelector('.btn-remove-word');
+        if (btn) btn.disabled = rows.length <= 1;
+    });
+}
+
+function onWordInput(input, idx) {
+    checkSimilarity(idx);
+}
+
+function titleCaseInput(input) {
+    if (input.value.trim()) {
+        // Capitalize first letter of each word
+        input.value = input.value.replace(/\b\w/g, c => c.toUpperCase());
+    }
+    checkSimilarity(parseInt(input.dataset.idx, 10));
+}
+
+function syncEditorId() {
+    // When editing a new set, auto-populate from date
+}
+
+// ══════════════════════════════════════════════════════════
+//  Levenshtein similarity
+// ══════════════════════════════════════════════════════════
+function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = [];
+    for (let i = 0; i <= m; i++) {
+        dp[i] = [i];
+        for (let j = 1; j <= n; j++) dp[i][j] = i === 0 ? j : 0;
+    }
+    for (let i = 1; i <= m; i++)
+        for (let j = 1; j <= n; j++)
+            dp[i][j] = a[i-1] === b[j-1]
+                ? dp[i-1][j-1]
+                : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    return dp[m][n];
+}
+
+function translationTooSimilar(word, translation) {
+    const w = word.toLowerCase();
+    const parts = translation.toLowerCase().split(/[\/,]/).map(p => p.trim()).filter(Boolean);
+    return parts.some(p => {
+        const dist = levenshtein(w, p);
+        const maxLen = Math.max(w.length, p.length);
+        return maxLen > 0 && (1 - dist / maxLen) >= 0.6;
+    });
+}
+
+function similarityScore(word, translation) {
+    const w = word.toLowerCase();
+    const parts = translation.toLowerCase().split(/[\/,]/).map(p => p.trim()).filter(Boolean);
+    let best = 0;
+    for (const p of parts) {
+        const dist = levenshtein(w, p);
+        const maxLen = Math.max(w.length, p.length);
+        if (maxLen > 0) best = Math.max(best, 1 - dist / maxLen);
+    }
+    return best;
+}
+
+function checkSimilarity(idx) {
+    const wordEl = document.querySelector(`.word-en[data-idx="${idx}"]`);
+    const transEl = document.querySelector(`.word-cs[data-idx="${idx}"]`);
+    const warnEl = document.getElementById(`sim-warn-${idx}`);
+    const row = document.getElementById(`word-row-${idx}`);
+    if (!wordEl || !transEl || !warnEl) return;
+
+    const word = wordEl.value.trim();
+    const trans = transEl.value.trim();
+
+    if (word && trans && translationTooSimilar(word, trans)) {
+        const pct = Math.round(similarityScore(word, trans) * 100);
+        warnEl.textContent = `⚠️ Překlad příliš podobný anglickému slovu (${pct}% shoda)`;
+        warnEl.style.display = 'block';
+        row.classList.add('has-warning');
+    } else {
+        warnEl.style.display = 'none';
+        row.classList.remove('has-warning');
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Set validation helper
+// ══════════════════════════════════════════════════════════
+function validateSetData(setId, newSet, allSets) {
+    const issues = [];
+    const words = newSet.words || [];
+    const trans = newSet.translations || {};
+
+    for (const word of words) {
+        const key = word.toLowerCase();
+        if (!trans[key]) {
+            issues.push({ type: 'error', text: `Slovo "${word}" nemá překlad` });
+        } else if (translationTooSimilar(word, trans[key])) {
+            const pct = Math.round(similarityScore(word, trans[key]) * 100);
+            issues.push({ type: 'warn', text: `"${word}" → "${trans[key]}" — překlad příliš podobný anglickému slovu (${pct}% shoda)` });
+        }
+    }
+
+    for (const word of words) {
+        const key = word.toLowerCase();
+        for (const [otherId, otherSet] of Object.entries(allSets)) {
+            if (otherId === setId) continue;
+            if ((otherSet.words || []).some(w => w.toLowerCase() === key)) {
+                issues.push({ type: 'warn', text: `Slovo "${word}" se již vyskytuje v setu ${otherId}` });
+                break;
+            }
+        }
+    }
+
+    return issues;
+}
+
+function showValidationPanel(issues, hasFatalErrors) {
+    const panel = document.getElementById('editor-validation-panel');
+    const content = document.getElementById('editor-validation-content');
+    const footer = document.getElementById('editor-footer');
+    const forceBtn = document.getElementById('editor-force-save-btn');
+
+    content.innerHTML = issues.map(i => `
+        <div class="validation-item ${i.type === 'error' ? 'error' : 'warn'}" style="margin-bottom:0.35rem;">
+            <span class="validation-icon">${i.type === 'error' ? '❌' : '⚠️'}</span>
+            <div>${escHtml(i.text)}</div>
+        </div>`).join('');
+
+    forceBtn.style.display = hasFatalErrors ? 'none' : 'inline-flex';
+    panel.style.display = 'block';
+    footer.style.display = 'none';
+}
+
+function hideValidationPanel() {
+    document.getElementById('editor-validation-panel').style.display = 'none';
+    document.getElementById('editor-footer').style.display = 'flex';
+}
+
+// Holds data for doSave() after user confirms warnings
+let _pendingSave = null;
+
+async function doSave() {
+    if (!_pendingSave) return;
+    const { newSetsData, newWordsJsRaw, idVal } = _pendingSave;
+    _pendingSave = null;
+    hideValidationPanel();
+    await _commitSave(newSetsData, newWordsJsRaw, idVal);
+}
+
+// ══════════════════════════════════════════════════════════
+//  Save set
+// ══════════════════════════════════════════════════════════
+async function saveSet() {
+    const saveBtn = document.getElementById('editor-save-btn');
+    const saveLabel = document.getElementById('editor-save-label');
+
+    // Gather form data
+    const idVal   = editingId || document.getElementById('ed-id').value.trim();
+    const title   = document.getElementById('ed-title').value.trim();
+    const desc    = document.getElementById('ed-description').value.trim();
+
+    if (!idVal) { toast('Vyplňte Set ID', 'warning'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(idVal)) { toast('Set ID musí být ve formátu YYYY-MM-DD', 'warning'); return; }
+    if (!title)  { toast('Vyplňte titulek', 'warning'); return; }
+
+    const words = [];
+    const translations = {};
+
+    document.querySelectorAll('#words-grid .word-row').forEach(row => {
+        const w = row.querySelector('.word-en').value.trim();
+        const t = row.querySelector('.word-cs').value.trim();
+        if (w) {
+            words.push(w);
+            if (t) translations[w.toLowerCase()] = t;
+        }
+    });
+
+    if (words.length === 0) { toast('Přidejte alespoň jedno slovo', 'warning'); return; }
+
+    // Build new set object — preserve cover flag when editing
+    const existingSet = setsData[idVal] || {};
+    const newSet = {
+        ...(existingSet.cover !== undefined ? { cover: existingSet.cover } : {}),
+        title,
+        date: idVal,
+        description: desc,
+        words,
+        translations,
+    };
+
+    // Merge into setsData
+    const newSetsData = { ...setsData, [idVal]: newSet };
+
+    // Serialize words.js now (needed both for validation display and commit)
+    const newWordsJsBlock = serializeSets(newSetsData);
+    const newWordsJsRaw = replaceWordsJsBlock(wordsJsRaw, newWordsJsBlock);
+
+    // Validate before committing
+    const issues = validateSetData(idVal, newSet, newSetsData);
+    if (issues.length > 0) {
+        const hasFatalErrors = issues.some(i => i.type === 'error');
+        _pendingSave = hasFatalErrors ? null : { newSetsData, newWordsJsRaw, idVal };
+        showValidationPanel(issues, hasFatalErrors);
+        return;
+    }
+
+    await _commitSave(newSetsData, newWordsJsRaw, idVal);
+}
+
+async function _commitSave(newSetsData, newWordsJsRaw, idVal) {
+    const saveBtn = document.getElementById('editor-save-btn');
+    const saveLabel = document.getElementById('editor-save-label');
+    saveBtn.disabled = true;
+    saveLabel.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.3); border-top-color:#fff;"></span> Ukládám…';
+
+    try {
+        // Fetch and bump index.html version
+        showLoading('Načítám index.html…');
+        const indexFile = await ghGet(INDEX_PATH);
+        const indexRaw = decodeURIComponent(escape(atob(indexFile.content)));
+        const newIndexRaw = bumpVersion(indexRaw);
+
+        // Atomic commit
+        showLoading('Commituji na GitHub…');
+        const isNew = !setsData[idVal];
+        const action = isNew ? 'přidání' : 'úprava';
+        const commitMsg = `feat: ${action} spelling bee setu ${idVal}`;
+
+        await ghCommitMultiple([
+            { path: WORDS_PATH, content: newWordsJsRaw },
+            { path: INDEX_PATH, content: newIndexRaw },
+        ], commitMsg);
+
+        toast(`Set ${idVal} byl úspěšně uložen!`, 'success');
+        closeSetEditor();
+
+        // Reload data to get fresh SHAs
+        await loadAllData();
+
+    } catch (e) {
+        toast('Chyba při ukládání: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        hideLoading();
+        saveBtn.disabled = false;
+        saveLabel.textContent = 'Uložit';
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Delete set
+// ══════════════════════════════════════════════════════════
+async function deleteSet(id) {
+    if (!confirm(`Opravdu smazat set ${id}?\n\nTato akce je nevratná.`)) return;
+
+    showLoading(`Mažu set ${id}…`);
+    try {
+        const newSetsData = { ...setsData };
+        delete newSetsData[id];
+
+        const newWordsJsBlock = serializeSets(newSetsData);
+        const newWordsJsRaw = replaceWordsJsBlock(wordsJsRaw, newWordsJsBlock);
+
+        const indexFile = await ghGet(INDEX_PATH);
+        const indexRaw = decodeURIComponent(escape(atob(indexFile.content)));
+        const newIndexRaw = bumpVersion(indexRaw);
+
+        await ghCommitMultiple([
+            { path: WORDS_PATH, content: newWordsJsRaw },
+            { path: INDEX_PATH, content: newIndexRaw },
+        ], `chore: smazání spelling bee setu ${id}`);
+
+        toast(`Set ${id} byl smazán.`, 'success');
+        await loadAllData();
+    } catch (e) {
+        toast('Chyba při mazání: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Trigger cover workflow
+// ══════════════════════════════════════════════════════════
+let _coverSetId = null;
+
+function triggerCover(id) {
+    _coverSetId = id;
+    const set = setsData[id] || {};
+    document.getElementById('cover-modal-title').textContent = `Cover — ${set.title || id}`;
+
+    const body = document.getElementById('cover-modal-body');
+    if (set.cover) {
+        // Cover exists — show image from GitHub Pages
+        const coverUrl = `../english/spelling-bees/${id}/cover.jpg?t=${Date.now()}`;
+        body.innerHTML = `
+            <img src="${coverUrl}" alt="Cover" style="max-width:100%; border-radius:var(--radius); max-height:280px; object-fit:cover;"
+                 onerror="this.outerHTML='<div style=\\'color:var(--text-muted);padding:1rem;\\'>Obrázek nelze načíst (možná není nasazeno).</div>'" />
+            <div style="margin-top:0.6rem; color:var(--text-muted); font-size:0.82rem;">Aktuální cover obrázek</div>`;
+    } else {
+        body.innerHTML = `<div style="padding:2rem; color:var(--text-muted);">Tento set nemá žádný cover obrázek.</div>`;
+    }
+
+    document.getElementById('cover-modal').classList.add('open');
+}
+
+function closeCoverModal() {
+    document.getElementById('cover-modal').classList.remove('open');
+    _coverSetId = null;
+}
+
+document.getElementById('cover-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeCoverModal();
+});
+
+async function doTriggerCover() {
+    if (!_coverSetId) return;
+    const id = _coverSetId;
+    closeCoverModal();
+
+    showLoading(`Spouštím workflow pro ${id}…`);
+    try {
+        const resp = await fetch(
+            `${API_BASE}/repos/${REPO}/actions/workflows/generate-cover.yml/dispatches`,
+            {
+                method: 'POST',
+                headers: ghHeaders(),
+                body: JSON.stringify({ ref: BRANCH, inputs: { set_id: id } })
+            }
+        );
+
+        if (resp.status === 204 || resp.ok) {
+            toast(`Workflow pro cover ${id} byl spuštěn. Zkontroluj Actions na GitHubu.`, 'success', 6000);
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(`${resp.status}: ${err.message || resp.statusText}`);
+        }
+    } catch (e) {
+        toast('Chyba při spouštění workflow: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Leaderboard
+// ══════════════════════════════════════════════════════════
+function populateLbSelect() {
+    const sel = document.getElementById('lb-set-select');
+    const keys = Object.keys(setsData).sort().reverse();
+    sel.innerHTML = '<option value="">— Vyberte set —</option>' +
+        keys.map(k => `<option value="${k}">${k} — ${escHtml(setsData[k].title || '')}</option>`).join('');
+}
+
+let firebaseApp = null;
+let firestoreDb = null;
+
+async function initFirebase() {
+    if (firestoreDb) return firestoreDb;
+
+    // Dynamically load Firebase SDK
+    await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
+
+    if (!firebase.apps.length) {
+        firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+    } else {
+        firebaseApp = firebase.apps[0];
+    }
+    firestoreDb = firebase.firestore();
+    return firestoreDb;
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+async function loadLeaderboard() {
+    const setId = document.getElementById('lb-set-select').value;
+    if (!setId) { toast('Vyberte set', 'warning'); return; }
+
+    const content = document.getElementById('lb-content');
+    const deleteAllBtn = document.getElementById('lb-delete-all-btn');
+    content.innerHTML = '<div class="empty-state"><div class="spinner"></div><div style="margin-top:0.5rem;">Načítám…</div></div>';
+    deleteAllBtn.style.display = 'none';
+
+    try {
+        const db = await initFirebase();
+        const snap = await db.collection('leaderboards').doc(setId).collection('scores').get();
+
+        if (snap.empty) {
+            content.innerHTML = '<div class="empty-state"><div class="empty-icon">🏆</div><div>Žádné skóre — buďte první!</div></div>';
+            return;
+        }
+
+        const scores = [];
+        snap.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
+
+        // Sort: score% desc, totalAttempts asc, bestStreak desc, date asc
+        scores.sort((a, b) => {
+            const aPct = a.total > 0 ? a.score / a.total : 0;
+            const bPct = b.total > 0 ? b.score / b.total : 0;
+            if (bPct !== aPct) return bPct - aPct;
+            const aAtt = a.totalAttempts || 999;
+            const bAtt = b.totalAttempts || 999;
+            if (aAtt !== bAtt) return aAtt - bAtt;
+            const aStr = a.bestStreak || 0;
+            const bStr = b.bestStreak || 0;
+            if (bStr !== aStr) return bStr - aStr;
+            return (a.date || '').localeCompare(b.date || '');
+        });
+
+        deleteAllBtn.style.display = '';
+        deleteAllBtn.dataset.setId = setId;
+
+        const rankClass = (i) => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+
+        content.innerHTML = `<div class="card" style="padding:0;"><div class="table-wrap"><table>
+            <thead><tr>
+                <th>#</th>
+                <th>Přezdívka</th>
+                <th>Skóre</th>
+                <th>Správně</th>
+                <th>Pokusy</th>
+                <th>Streak</th>
+                <th>Datum</th>
+                <th></th>
+            </tr></thead>
+            <tbody>
+                ${scores.map((s, i) => {
+                    const pct = s.total > 0 ? Math.round(s.score / s.total * 100) : 0;
+                    const rc = rankClass(i);
+                    return `<tr>
+                        <td><span class="rank-num ${rc}">${i + 1}</span></td>
+                        <td><strong>${escHtml(s.nickname || s.id)}</strong></td>
+                        <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'}">${pct}%</span></td>
+                        <td>${s.score || 0} / ${s.total || 0}</td>
+                        <td>${s.totalAttempts || '-'}</td>
+                        <td>${s.bestStreak || '-'}</td>
+                        <td style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                onclick="deleteScore('${setId}', '${escHtml(s.id)}')">Smazat</button>
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table></div></div>`;
+
+    } catch (e) {
+        toast('Chyba při načítání leaderboardu: ' + e.message, 'error', 8000);
+        content.innerHTML = `<div class="card" style="color:var(--danger);">Chyba: ${escHtml(e.message)}</div>`;
+        console.error(e);
+    }
+}
+
+async function deleteScore(setId, docId) {
+    if (!confirm(`Smazat záznam "${docId}" ze setu ${setId}?`)) return;
+    try {
+        const db = await initFirebase();
+        await db.collection('leaderboards').doc(setId).collection('scores').doc(docId).delete();
+        toast('Záznam byl smazán.', 'success');
+        loadLeaderboard();
+    } catch (e) {
+        toast('Chyba při mazání: ' + e.message, 'error');
+        console.error(e);
+    }
+}
+
+async function deleteAllScores() {
+    const btn = document.getElementById('lb-delete-all-btn');
+    const setId = btn.dataset.setId;
+    if (!setId) return;
+    if (!confirm(`Opravdu smazat VŠECHNA skóre pro set ${setId}?\n\nTato akce je nevratná.`)) return;
+
+    showLoading('Mažu všechna skóre…');
+    try {
+        const db = await initFirebase();
+        const snap = await db.collection('leaderboards').doc(setId).collection('scores').get();
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        toast(`Všechna skóre pro ${setId} byla smazána.`, 'success');
+        loadLeaderboard();
+    } catch (e) {
+        toast('Chyba při hromadném mazání: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  Validation
+// ══════════════════════════════════════════════════════════
+function runValidation() {
+    const container = document.getElementById('validation-content');
+    container.innerHTML = '';
+
+    if (Object.keys(setsData).length === 0) {
+        container.innerHTML = '<div class="empty-state">Nejsou načtena žádná data.</div>';
+        return;
+    }
+
+    const issues = [];
+
+    // Collect all words for duplicate checking (case-insensitive)
+    const wordMap = {}; // lowercase word -> [setId, ...]
+
+    for (const [setId, set] of Object.entries(setsData)) {
+        const words = set.words || [];
+        const trans = set.translations || {};
+
+
+
+        // Check each word
+        for (const word of words) {
+            const key = word.toLowerCase();
+
+            // Duplicate tracking
+            if (!wordMap[key]) wordMap[key] = [];
+            wordMap[key].push(setId);
+
+            // Missing translation
+            if (!trans[key]) {
+                issues.push({
+                    id: `missing:${setId}:${key}`,
+                    type: 'warn',
+                    icon: '⚠️',
+                    text: `Slovo "${word}" v setu ${setId} nemá překlad`,
+                    meta: set.title,
+                    fixSetId: setId,
+                    fixWord: word
+                });
+            }
+
+            // Translation too similar
+            if (trans[key] && translationTooSimilar(word, trans[key])) {
+                const pct = Math.round(similarityScore(word, trans[key]) * 100);
+                issues.push({
+                    id: `sim:${setId}:${key}`,
+                    type: 'warn',
+                    icon: '⚠️',
+                    text: `"${word}" → "${trans[key]}" — překlad příliš podobný (${pct}% shoda)`,
+                    meta: `Set: ${setId}`,
+                    fixSetId: setId,
+                    fixWord: word
+                });
+            }
+        }
+    }
+
+    // Check duplicates across sets
+    for (const [word, setIds] of Object.entries(wordMap)) {
+        if (setIds.length > 1) {
+            issues.push({
+                id: `dup:${word}`,
+                type: 'warn',
+                icon: '⚠️',
+                text: `Duplicitní slovo "${word}" se vyskytuje v ${setIds.length} setech`,
+                meta: setIds.join(', ')
+            });
+        }
+    }
+
+    // Update tab badge
+    const tabBtn = document.getElementById('tab-validation-btn');
+    const warnCount = issues.filter(i => i.type === 'warn').length;
+    const errCount  = issues.filter(i => i.type === 'error').length;
+
+    if (errCount > 0) {
+        tabBtn.textContent = `❌ Validace (${errCount + warnCount})`;
+    } else if (warnCount > 0) {
+        tabBtn.textContent = `⚠️ Validace (${warnCount})`;
+    } else {
+        tabBtn.textContent = '✅ Validace';
+    }
+
+    if (issues.length === 0) {
+        container.innerHTML = `
+            <div class="validation-item ok">
+                <span class="validation-icon">✅</span>
+                <div>Vše v pořádku — žádné problémy nenalezeny ve ${Object.keys(setsData).length} setech.</div>
+            </div>`;
+        return;
+    }
+
+    // Group: errors first, then warnings
+    const sorted = [...issues.filter(i => i.type === 'error'), ...issues.filter(i => i.type === 'warn')];
+
+    container.innerHTML = sorted.map(issue => `
+        <div class="validation-item ${issue.type}">
+            <span class="validation-icon">${issue.icon}</span>
+            <div style="flex:1;">
+                <div>${escHtml(issue.text)}</div>
+                ${issue.meta ? `<div class="validation-meta">${escHtml(issue.meta)}</div>` : ''}
+            </div>
+            ${issue.fixSetId ? `<div class="validation-actions"><button class="btn btn-primary btn-sm" onclick="fixValidationIssue('${issue.fixSetId}', '${issue.fixWord.replace(/'/g, "\\'")}')">Opravit</button></div>` : ''}
+        </div>
+    `).join('');
+}
+
+function fixValidationIssue(setId, word) {
+    const setsBtn = document.querySelector('.tab-btn[onclick*="sets"]');
+    if (setsBtn) switchTab('sets', setsBtn);
+    openSetEditor(setId);
+
+    requestAnimationFrame(() => {
+        const set = setsData[setId];
+        if (!set) return;
+        const idx = set.words.findIndex(w => w.toLowerCase() === word.toLowerCase());
+        if (idx === -1) return;
+        const input = document.querySelector(`.word-cs[data-idx="${idx}"]`);
+        if (input) {
+            input.focus();
+            input.select();
+            const row = document.getElementById(`word-row-${idx}`);
+            if (row) {
+                row.style.outline = '2px solid var(--accent)';
+                row.style.borderRadius = 'var(--radius)';
+                setTimeout(() => { row.style.outline = ''; }, 2000);
+            }
+        }
+    });
+}
+
+// ══════════════════════════════════════════════════════════
+//  Session restore on page load
+// ══════════════════════════════════════════════════════════
+(function init() {
+    const savedPAT = sessionStorage.getItem('hippo_admin_pat');
+    if (savedPAT) {
+        ghPAT = savedPAT;
+        showApp();
+    }
+})();
+</script>
+</body>
+</html>

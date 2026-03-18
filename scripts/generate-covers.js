@@ -107,7 +107,12 @@ async function generateCover(setId, set, genAI) {
 
     // Generuj optimalizovaný thumb (700px, quality 80) pro použití na homepage
     const thumbFile = path.join(outDir, 'cover-thumb.jpg');
-    execSync(`sips -s format jpeg -s formatOptions 80 -Z 700 "${outFile}" --out "${thumbFile}"`, { stdio: 'pipe' });
+    try {
+        execSync(`sips -s format jpeg -s formatOptions 80 -Z 700 "${outFile}" --out "${thumbFile}"`, { stdio: 'pipe' });
+    } catch {
+        // Fallback for Linux (GitHub Actions) — requires ImageMagick
+        execSync(`convert "${outFile}" -resize 700x -quality 80 "${thumbFile}"`, { stdio: 'pipe' });
+    }
     const thumbSize = Math.round(fs.statSync(thumbFile).size / 1024);
     console.log(`  Thumb: ${path.relative(ROOT, thumbFile)} (${thumbSize} KB)`);
 

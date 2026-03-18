@@ -1,0 +1,39 @@
+name: Generate Cover Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      set_id:
+        description: 'Set ID (YYYY-MM-DD)'
+        required: true
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install ImageMagick (thumbnail fallback for Linux)
+        run: sudo apt-get install -y imagemagick
+
+      - name: Generate cover
+        run: node scripts/generate-covers.js --set "${{ inputs.set_id }}"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Commit and push cover images
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "feat: generování coveru pro set ${{ inputs.set_id }}"
+          file_pattern: "english/spelling-bees/${{ inputs.set_id }}/* english/spelling-bees/shared/words.js"
