@@ -253,6 +253,19 @@ var SPELLING_BEE_SETS = {
             "archeologist": "archeolog",
         },
     },
+    "2026-12-31": {
+        title: "Tajtl",
+        date: "2026-12-31",
+        description: "Popisek",
+        words: [
+            "Cat",
+            "Dog",
+        ],
+        translations: {
+            "cat": "kočka",
+            "dog": "pes",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
