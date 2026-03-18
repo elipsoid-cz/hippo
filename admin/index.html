@@ -30,6 +30,7 @@ body {
     color: var(--text);
     min-height: 100vh;
     font-size: 14px;
+    overflow-x: hidden;
 }
 
 /* ── Login ── */
@@ -118,7 +119,7 @@ header.app-header .header-meta { color: var(--text-muted); font-size: 0.8rem; }
 .tab-btn:hover { color: var(--text); }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.tab-content { display: none; padding: 1.5rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+.tab-content { display: none; padding: 1.5rem; max-width: 1100px; margin: 0 auto; width: 100%; min-width: 0; overflow-x: hidden; }
 .tab-content.active { display: block; }
 
 /* ── Form elements ── */
@@ -443,6 +444,13 @@ td {
     .word-row { grid-template-columns: 20px 1fr 1fr; }
     .word-row .btn-sm { display: none; }
     .tab-btn { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
+    .tab-content { padding: 0.75rem; }
+    /* Skrýt méně důležité sloupce v tabulce setů */
+    .col-desc, .col-words, .col-cover { display: none; }
+    /* Skrýt méně důležité sloupce v leaderboard tabulce */
+    .col-attempts, .col-streak, .col-date { display: none; }
+    /* Kompaktnější tlačítka akcí */
+    .set-row-actions .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
 }
 
 /* ── Misc ── */
@@ -520,9 +528,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
                         <tr>
                             <th>Set ID</th>
                             <th>Titulek</th>
-                            <th>Popis</th>
-                            <th style="text-align:center;">Slov</th>
-                            <th style="text-align:center;">Cover</th>
+                            <th class="col-desc">Popis</th>
+                            <th class="col-words" style="text-align:center;">Slov</th>
+                            <th class="col-cover" style="text-align:center;">Cover</th>
                             <th>Akce</th>
                         </tr>
                     </thead>
@@ -1127,9 +1135,9 @@ function renderSetsTable() {
         return `<tr>
             <td><code>${key}</code></td>
             <td>${escHtml(s.title || '')}</td>
-            <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escHtml(s.description || '')}">${escHtml(s.description || '')}</td>
-            <td style="text-align:center;">${countBadge}</td>
-            <td style="text-align:center;">${coverBadge}</td>
+            <td class="col-desc" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escHtml(s.description || '')}">${escHtml(s.description || '')}</td>
+            <td class="col-words" style="text-align:center;">${countBadge}</td>
+            <td class="col-cover" style="text-align:center;">${coverBadge}</td>
             <td>
                 <div class="set-row-actions">
                     <button class="btn btn-secondary btn-sm" onclick="openSetEditor('${key}')">Upravit</button>
@@ -2107,9 +2115,9 @@ async function loadLeaderboard() {
                 <th>Přezdívka</th>
                 <th>Skóre</th>
                 <th>Správně</th>
-                <th>Pokusy</th>
-                <th>Streak</th>
-                <th>Datum</th>
+                <th class="col-attempts">Pokusy</th>
+                <th class="col-streak">Streak</th>
+                <th class="col-date">Datum</th>
                 <th></th>
             </tr></thead>
             <tbody>
@@ -2121,9 +2129,9 @@ async function loadLeaderboard() {
                         <td><strong>${escHtml(s.nickname || s.id)}</strong></td>
                         <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'}">${pct}%</span></td>
                         <td>${s.score || 0} / ${s.total || 0}</td>
-                        <td>${s.totalAttempts || '-'}</td>
-                        <td>${s.bestStreak || '-'}</td>
-                        <td style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
+                        <td class="col-attempts">${s.totalAttempts || '-'}</td>
+                        <td class="col-streak">${s.bestStreak || '-'}</td>
+                        <td class="col-date" style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
                         <td>
                             <button class="btn btn-danger btn-sm"
                                 onclick="deleteScore('${setId}', '${escHtml(s.id)}')">Smazat</button>
