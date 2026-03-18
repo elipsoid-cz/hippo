@@ -253,6 +253,25 @@ var SPELLING_BEE_SETS = {
             "archeologist": "archeolog",
         },
     },
+    "2026-03-30": {
+        title: "March 30",
+        date: "2026-03-30",
+        description: "Diverse everyday and fantasy",
+        words: [
+            "Bicycle",
+            "Car",
+            "Cat",
+            "Witch",
+            "Monster",
+        ],
+        translations: {
+            "bicycle": "kolo",
+            "car": "auto",
+            "cat": "kočka",
+            "witch": "čarodějnice",
+            "monster": "příšera",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
