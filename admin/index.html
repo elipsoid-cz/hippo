@@ -539,6 +539,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
                             <th class="col-desc">Popis</th>
                             <th class="col-words" style="text-align:center;">Slov</th>
                             <th class="col-cover" style="text-align:center;">Cover</th>
+                            <th class="col-audio" style="text-align:center;">Audio</th>
                             <th>Akce</th>
                         </tr>
                     </thead>
@@ -1214,7 +1215,7 @@ function renderSetsTable() {
     const keys = Object.keys(setsData).sort().reverse(); // newest first
 
     if (keys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div>Žádné sety</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div>Žádné sety</div></td></tr>';
         return;
     }
 
@@ -1227,6 +1228,12 @@ function renderSetsTable() {
         const countBadge = wordCount === 10
             ? `<span class="badge badge-success">${wordCount}</span>`
             : `<span class="badge badge-danger">${wordCount}</span>`;
+        const audioCount = s.audioCount != null ? s.audioCount : (s.audio ? wordCount : 0);
+        const audioBadge = audioCount === 0
+            ? '<span class="badge badge-danger">❌ Ne</span>'
+            : audioCount < wordCount
+                ? `<span class="badge badge-warning">${audioCount}/${wordCount}</span>`
+                : `<span class="badge badge-success">✅ ${audioCount}</span>`;
 
         return `<tr>
             <td><code>${key}</code></td>
@@ -1234,6 +1241,7 @@ function renderSetsTable() {
             <td class="col-desc" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escHtml(s.description || '')}">${escHtml(s.description || '')}</td>
             <td class="col-words" style="text-align:center;">${countBadge}</td>
             <td class="col-cover" style="text-align:center;">${coverBadge}</td>
+            <td class="col-audio" style="text-align:center;">${audioBadge}</td>
             <td>
                 <div class="set-row-actions">
                     <button class="btn btn-secondary btn-sm" onclick="openSetEditor('${key}')">Upravit</button>
@@ -2177,6 +2185,12 @@ async function _renderAudioWordList(id, headerHtml) {
         : `<div style="margin-top:0.6rem;font-size:0.82rem;color:var(--danger);">${missing.length} ${missing.length === 1 ? 'slovo nemá' : 'slova nemají'} audio: ${missing.map(escHtml).join(', ')}</div>`;
 
     body.innerHTML = (headerHtml || '') + `<div style="text-align:left;padding:0.25rem 0 0.25rem;">${rows}${statusHtml}</div>`;
+
+    // Aktualizuj počet v tabulce
+    setsData[id] = setsData[id] || {};
+    setsData[id].audioCount = words.length - missing.length;
+    if (setsData[id].audioCount > 0) setsData[id].audio = true;
+    renderSetsTable();
 
     btn.disabled = false;
     btn.textContent = missing.length > 0 ? `🔊 Dogenerovat zbývající (${missing.length})` : '🔊 Vygenerovat znovu';
