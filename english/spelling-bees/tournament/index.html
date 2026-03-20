@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Spelling Bee Tournament</title>
+        <title>Tournament Practice</title>
         <link rel="icon" type="image/png" sizes="32x32" href="../../../favicon.ico" />
         <link rel="icon" type="image/png" sizes="16x16" href="../../../favicon-16.png" />
         <link rel="stylesheet" href="../shared/styles.css" />
@@ -78,7 +78,7 @@
                     class="btn-main"
                     style="margin-top: 10px"
                 >
-                    Play Again
+                    Continue →
                 </button>
             </div>
         </div>
@@ -92,11 +92,12 @@
                 SpellingBeeEngine.init({
                     words: allWords,
                     setId: "tournament",
-                    title: "Spelling Bee Tournament",
+                    title: "Tournament Practice",
                     icon: "\uD83C\uDFC6",
                     description: allWords.length + " words from " + setCount + " sets · 10 per round",
                     wordsPerRound: 10,
                     translations: getAllTranslations(),
+                    showProgress: true,
                 });
             })();
         </script>

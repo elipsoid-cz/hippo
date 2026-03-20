@@ -680,3 +680,44 @@ input:read-only {
     color: #7f8c8d;
     letter-spacing: 0.01em;
 }
+
+/* --- Tournament Progress Tracker --- */
+.tournament-progress {
+    margin: 0.8rem 0 1.2rem 0;
+}
+
+.tp-bar {
+    height: 12px;
+    background: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+}
+
+.tp-seg {
+    height: 100%;
+    flex-shrink: 0;
+    transition: width 0.5s ease;
+}
+
+.tp-mastered { background: var(--success); }
+.tp-learning  { background: #e67e22; }
+
+.tp-stats {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 7px;
+    flex-wrap: wrap;
+}
+
+.tp-stat { font-size: 0.82rem; color: #7f8c8d; }
+.tp-stat-mastered { color: var(--success); font-weight: 600; }
+.tp-stat-learning  { color: #e67e22; font-weight: 600; }
+.tp-stat-notseen   { color: #95a5a6; }
+
+.tp-final-note {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin: 4px 0 0.8rem 0;
+}

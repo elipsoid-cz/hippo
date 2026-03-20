@@ -14,6 +14,7 @@ var SpellingBeeEngine = (function () {
         wordsPerRound: 0, // 0 = use all words; >0 = pick N words per round (tournament mode)
         translations: {}, // optional: lowercase word -> Czech translation
         cover: null,      // optional: URL to cover image (shown on welcome screen)
+        showProgress: false, // if true: track seen words + show progress bar on welcome screen
     };
 
     // --- Internal State ---
@@ -96,6 +97,32 @@ var SpellingBeeEngine = (function () {
         }
     }
 
+    // --- Seen-word tracking (for progress bar) ---
+
+    function getSeenKey() {
+        return "hippo-seen-" + config.setId;
+    }
+
+    function loadSeen() {
+        try {
+            var r = localStorage.getItem(getSeenKey());
+            return r ? JSON.parse(r) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveSeen(d) {
+        try { localStorage.setItem(getSeenKey(), JSON.stringify(d)); } catch (e) {}
+    }
+
+    function markWordsAsSeen(wordList) {
+        if (!config.showProgress) return;
+        var data = loadSeen();
+        wordList.forEach(function (w) { data[w.toLowerCase()] = true; });
+        saveSeen(data);
+    }
+
     function recordWrong(word) {
         var data = loadMistakes();
         var key = word.toLowerCase();
@@ -144,6 +171,16 @@ var SpellingBeeEngine = (function () {
         return config.words.filter(function (w) {
             return mistakeKeys[w.toLowerCase()];
         });
+    }
+
+    function computeMasteredCount() {
+        if (!config.showProgress) return 0;
+        var seenData = loadSeen();
+        var mistakeData = loadMistakes();
+        return config.words.filter(function (w) {
+            var key = w.toLowerCase();
+            return seenData[key] && !mistakeData[key];
+        }).length;
     }
 
     // =====================
@@ -242,11 +279,52 @@ var SpellingBeeEngine = (function () {
         });
     }
 
+    function saveMasteryScore(nickname, callback) {
+        if (!db || !nickname) { if (callback) callback(); return; }
+        var key = nickname.toLowerCase().trim();
+        var newCount = computeMasteredCount();
+        var docRef = getScoreDocRef(key);
+
+        docRef.get().then(function (doc) {
+            if (doc.exists) {
+                var existing = doc.data();
+                if (newCount <= (existing.masteredCount || 0)) {
+                    // No improvement — just refresh leaderboard
+                    if (callback) callback();
+                    return;
+                }
+            }
+            var originalDate = (doc.exists && doc.data().date) ? doc.data().date : new Date().toISOString();
+            docRef.set({
+                nickname: nickname.trim(),
+                masteredCount: newCount,
+                totalWords: config.words.length,
+                date: originalDate
+            }).then(function () {
+                if (callback) callback();
+            }).catch(function () {
+                if (callback) callback();
+            });
+        }).catch(function () {
+            docRef.set({
+                nickname: nickname.trim(),
+                masteredCount: computeMasteredCount(),
+                totalWords: config.words.length,
+                date: new Date().toISOString()
+            }).then(function () {
+                if (callback) callback();
+            }).catch(function () {
+                if (callback) callback();
+            });
+        });
+    }
+
     function loadLeaderboard(callback) {
         if (!db) { callback([]); return; }
+        var orderField = config.showProgress ? "masteredCount" : "score";
         db.collection("leaderboards").doc(config.setId)
             .collection("scores")
-            .orderBy("score", "desc")
+            .orderBy(orderField, "desc")
             .limit(30)
             .get()
             .then(function (snapshot) {
@@ -254,17 +332,27 @@ var SpellingBeeEngine = (function () {
                 snapshot.forEach(function (doc) {
                     entries.push(doc.data());
                 });
-                // Client-side sort for tiebreakers
-                entries.sort(function (a, b) {
-                    var pctA = a.score / a.total;
-                    var pctB = b.score / b.total;
-                    if (pctB !== pctA) return pctB - pctA;
-                    var attA = a.totalAttempts || Infinity;
-                    var attB = b.totalAttempts || Infinity;
-                    if (attA !== attB) return attA - attB;
-                    if ((b.bestStreak || 0) !== (a.bestStreak || 0)) return (b.bestStreak || 0) - (a.bestStreak || 0);
-                    return new Date(a.date) - new Date(b.date);
-                });
+                // Client-side sort
+                if (config.showProgress) {
+                    // Mastery sort: most mastered words first, first-achiever wins ties
+                    entries.sort(function (a, b) {
+                        var ca = a.masteredCount || 0, cb = b.masteredCount || 0;
+                        if (cb !== ca) return cb - ca;
+                        return new Date(a.date) - new Date(b.date);
+                    });
+                } else {
+                    // Standard sort for regular sets
+                    entries.sort(function (a, b) {
+                        var pctA = a.score / a.total;
+                        var pctB = b.score / b.total;
+                        if (pctB !== pctA) return pctB - pctA;
+                        var attA = a.totalAttempts || Infinity;
+                        var attB = b.totalAttempts || Infinity;
+                        if (attA !== attB) return attA - attB;
+                        if ((b.bestStreak || 0) !== (a.bestStreak || 0)) return (b.bestStreak || 0) - (a.bestStreak || 0);
+                        return new Date(a.date) - new Date(b.date);
+                    });
+                }
                 callback(entries);
             })
             .catch(function () {
@@ -313,9 +401,13 @@ var SpellingBeeEngine = (function () {
                 return;
             }
             saveNickname(nick);
+            if (config.showProgress) {
+                try { localStorage.setItem(getMasterySavedKey(), '1'); } catch (e) {}
+            }
             btn.disabled = true;
             btn.textContent = "Saving...";
-            saveScore(nick, function () {
+            var saveFn = config.showProgress ? saveMasteryScore : saveScore;
+            saveFn(nick, function () {
                 panel.remove();
                 loadLeaderboard(function (entries) {
                     renderLeaderboard(entries, nick);
@@ -333,6 +425,26 @@ var SpellingBeeEngine = (function () {
         input.addEventListener("keydown", function (e) {
             if (e.key === "Enter") btn.click();
         });
+    }
+
+    function getMasterySavedKey() {
+        return "hippo-mastery-saved-" + config.setId;
+    }
+
+    function renderMasteryPanel() {
+        var nick = loadNickname();
+        var alreadySaved = localStorage.getItem(getMasterySavedKey());
+        if (nick && alreadySaved && firebaseReady) {
+            // Returning player — auto-update silently
+            saveMasteryScore(nick, function () {
+                loadLeaderboard(function (entries) {
+                    renderLeaderboard(entries, nick);
+                });
+            });
+        } else if (firebaseReady) {
+            // First time in this tournament — show save panel
+            renderSavePanel();
+        }
     }
 
     function buildLeaderboardElement(entries, currentNickname) {
@@ -355,6 +467,7 @@ var SpellingBeeEngine = (function () {
         var medalEmoji = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
         var maxDisplay = 30;
         var displayRank = 1;
+        var currentTotal = config.words.length;
 
         for (var i = 0; i < Math.min(entries.length, maxDisplay); i++) {
             var entry = entries[i];
@@ -366,46 +479,61 @@ var SpellingBeeEngine = (function () {
                 row.classList.add("leaderboard-current");
             }
 
-            // Tied rank: same position if score%, attempts and streak are all equal
-            if (i > 0) {
-                var prev = entries[i - 1];
-                var samePct = (entry.score / entry.total) === (prev.score / prev.total);
-                var sameAttempts = (entry.totalAttempts || Infinity) === (prev.totalAttempts || Infinity);
-                var sameStreak = (entry.bestStreak || 0) === (prev.bestStreak || 0);
-                if (!samePct || !sameAttempts || !sameStreak) {
+            if (config.showProgress) {
+                // --- Mastery leaderboard row ---
+                var mc = entry.masteredCount || 0;
+                if (i > 0 && (entries[i - 1].masteredCount || 0) !== mc) {
                     displayRank = i + 1;
                 }
-            }
-
-            var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
-            var pct = Math.round((entry.score / entry.total) * 100);
-            var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
-            var extraHtml;
-            if (pct === 100) {
-                extraHtml = '<span class="lb-perfect-label">\uD83C\uDFAF Perfect!</span>';
+                var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
+                var badge = mc === currentTotal
+                    ? '<span class="lb-perfect-label">\u2B50 All done!</span>'
+                    : '<span class="lb-perfect-label"></span>';
+                row.title = entry.nickname + " \u2014 " + mc + " / " + currentTotal + " words mastered";
+                row.innerHTML =
+                    '<span class="lb-rank">' + rank + '</span>' +
+                    '<span class="lb-name">' + entry.nickname + '</span>' +
+                    '<span class="lb-score">' + mc + '\u00A0/\u00A0' + currentTotal + '</span>' +
+                    badge;
             } else {
-                var mistakesHtml;
-                if (mistakes === null) {
-                    mistakesHtml = '<span class="lb-attempts"></span>';
-                } else {
-                    mistakesHtml = '<span class="lb-attempts">\u274C\u00A0' + mistakes + '</span>';
+                // --- Standard leaderboard row ---
+                if (i > 0) {
+                    var prev = entries[i - 1];
+                    var samePct = (entry.score / entry.total) === (prev.score / prev.total);
+                    var sameAttempts = (entry.totalAttempts || Infinity) === (prev.totalAttempts || Infinity);
+                    var sameStreak = (entry.bestStreak || 0) === (prev.bestStreak || 0);
+                    if (!samePct || !sameAttempts || !sameStreak) {
+                        displayRank = i + 1;
+                    }
                 }
-                var streakHtml = entry.bestStreak >= 3
-                    ? '<span class="lb-streak">\uD83D\uDD25\u00A0' + entry.bestStreak + '</span>'
-                    : '<span class="lb-streak"></span>';
-                extraHtml = streakHtml + mistakesHtml;
+                var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
+                var pct = Math.round((entry.score / entry.total) * 100);
+                var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
+                var extraHtml;
+                if (pct === 100) {
+                    extraHtml = '<span class="lb-perfect-label">\uD83C\uDFAF Perfect!</span>';
+                } else {
+                    var mistakesHtml;
+                    if (mistakes === null) {
+                        mistakesHtml = '<span class="lb-attempts"></span>';
+                    } else {
+                        mistakesHtml = '<span class="lb-attempts">\u274C\u00A0' + mistakes + '</span>';
+                    }
+                    var streakHtml = entry.bestStreak >= 3
+                        ? '<span class="lb-streak">\uD83D\uDD25\u00A0' + entry.bestStreak + '</span>'
+                        : '<span class="lb-streak"></span>';
+                    extraHtml = streakHtml + mistakesHtml;
+                }
+                var mistakeWord = (mistakes === 1) ? '1 mistake' : (mistakes > 1 ? mistakes + ' mistakes' : 'no mistakes');
+                var tooltip = entry.nickname + ' \u2014 ' + entry.score + '/' + entry.total + ' correct'
+                    + (entry.bestStreak >= 3 ? ' \u00B7 best streak: ' + entry.bestStreak : '')
+                    + ' \u00B7 ' + mistakeWord;
+                row.title = tooltip;
+                row.innerHTML =
+                    '<span class="lb-rank">' + rank + '</span>' +
+                    '<span class="lb-name">' + entry.nickname + '</span>' +
+                    '<span class="lb-score">' + pct + '%</span>' + extraHtml;
             }
-
-            var mistakeWord = (mistakes === 1) ? '1 mistake' : (mistakes > 1 ? mistakes + ' mistakes' : 'no mistakes');
-            var tooltip = entry.nickname + ' \u2014 ' + entry.score + '/' + entry.total + ' correct'
-                + (entry.bestStreak >= 3 ? ' \u00B7 best streak: ' + entry.bestStreak : '')
-                + ' \u00B7 ' + mistakeWord;
-
-            row.title = tooltip;
-            row.innerHTML =
-                '<span class="lb-rank">' + rank + '</span>' +
-                '<span class="lb-name">' + entry.nickname + '</span>' +
-                '<span class="lb-score">' + pct + '%</span>' + extraHtml;
 
             container.appendChild(row);
         }
@@ -753,7 +881,7 @@ var SpellingBeeEngine = (function () {
             .replace(/[\u2018\u2019\u0060\u2032]/g, "'");
     }
 
-    // Pick N words for a tournament round: mistake words first, rest random.
+    // Pick N words for a round: mistakes first, then unseen, then already-seen-clean.
     function selectWordsForRound(wordList) {
         if (config.wordsPerRound <= 0 || wordList.length <= config.wordsPerRound) {
             return shuffle(wordList);
@@ -763,13 +891,28 @@ var SpellingBeeEngine = (function () {
         });
         var mistakeSet = {};
         mistakes.forEach(function (w) { mistakeSet[w.toLowerCase()] = true; });
-        var nonMistakes = wordList.filter(function (w) {
-            return !mistakeSet[w.toLowerCase()];
+
+        // Split non-mistakes into unseen vs already-seen-clean (only used when showProgress=true)
+        var seenData = config.showProgress ? loadSeen() : {};
+        var unseenClean = [], seenClean = [];
+        wordList.forEach(function (w) {
+            if (mistakeSet[w.toLowerCase()]) return;
+            if (seenData[w.toLowerCase()]) {
+                seenClean.push(w);
+            } else {
+                unseenClean.push(w);
+            }
         });
+
         var chosen = shuffle(mistakes).slice(0, config.wordsPerRound);
         var remaining = config.wordsPerRound - chosen.length;
         if (remaining > 0) {
-            chosen = chosen.concat(shuffle(nonMistakes).slice(0, remaining));
+            var fromUnseen = shuffle(unseenClean).slice(0, remaining);
+            chosen = chosen.concat(fromUnseen);
+            remaining -= fromUnseen.length;
+        }
+        if (remaining > 0) {
+            chosen = chosen.concat(shuffle(seenClean).slice(0, remaining));
         }
         return shuffle(chosen);
     }
@@ -800,6 +943,8 @@ var SpellingBeeEngine = (function () {
         state.currentWords = (mode === "all" && config.wordsPerRound > 0)
             ? selectWordsForRound(wordList)
             : shuffle(wordList);
+        // Mark words as seen (only in "all" mode — not during Practice Mistakes)
+        if (mode === "all") markWordsAsSeen(state.currentWords);
         state.currentIndex = 0;
         state.score = 0;
         state.streak = 0;
@@ -945,10 +1090,18 @@ var SpellingBeeEngine = (function () {
 
         var total = state.currentWords.length;
         var text = "Score: " + state.score + " of " + total;
-        if (state.bestStreak >= 3) {
+        if (!config.showProgress && state.bestStreak >= 3) {
             text += " | Best streak: " + state.bestStreak + " \uD83D\uDD25";
         }
         dom.finalScore.textContent = text;
+
+        // Progress bar for tournament (replaces plain-text note)
+        if (config.showProgress) {
+            var existingProgress = dom.finalScreen.querySelector(".tournament-progress");
+            if (existingProgress) existingProgress.remove();
+            var tracker = buildProgressTracker();
+            dom.finalScore.insertAdjacentElement("afterend", tracker);
+        }
 
         if (state.sessionMistakes.length > 0) {
             show(dom.mistakesContainer);
@@ -979,7 +1132,11 @@ var SpellingBeeEngine = (function () {
 
         // Leaderboard (only for normal game, not Practice Mistakes)
         if (state.mode === "all") {
-            renderSavePanel();
+            if (config.showProgress) {
+                renderMasteryPanel();
+            } else {
+                renderSavePanel();
+            }
         }
     }
 
@@ -1009,6 +1166,39 @@ var SpellingBeeEngine = (function () {
     // Welcome Screen
     // =====================
 
+    function buildProgressTracker() {
+        var total = config.words.length;
+        var seenData = loadSeen();
+        var mistakeData = loadMistakes();
+        var mastered = 0, learning = 0, notSeen = 0;
+        config.words.forEach(function (w) {
+            var key = w.toLowerCase();
+            if (!seenData[key]) {
+                notSeen++;
+            } else if (mistakeData[key]) {
+                learning++;
+            } else {
+                mastered++;
+            }
+        });
+        var masteredPct = (mastered / total) * 100;
+        var learningPct = (learning / total) * 100;
+
+        var el = document.createElement("div");
+        el.className = "tournament-progress";
+        el.innerHTML =
+            '<div class="tp-bar">' +
+                '<div class="tp-seg tp-mastered" style="width:' + masteredPct + '%"></div>' +
+                '<div class="tp-seg tp-learning" style="width:' + learningPct + '%"></div>' +
+            '</div>' +
+            '<div class="tp-stats">' +
+                '<span class="tp-stat tp-stat-mastered">\u2705\u00A0' + mastered + ' mastered</span>' +
+                '<span class="tp-stat tp-stat-learning">\uD83D\uDD04\u00A0' + learning + ' learning</span>' +
+                '<span class="tp-stat tp-stat-notseen">\u25A1\u00A0' + notSeen + ' not seen</span>' +
+            '</div>';
+        return el;
+    }
+
     function setupWelcomeScreen() {
         if (dom.setCover) {
             if (config.cover) {
@@ -1032,9 +1222,13 @@ var SpellingBeeEngine = (function () {
         if (mistakeWords.length > 0) {
             // Show mode selection
             if (dom.startAllBtn) {
-                dom.startAllBtn.textContent = config.wordsPerRound > 0
-                    ? "All Words (" + config.wordsPerRound + " per round)"
-                    : "All Words (" + config.words.length + ")";
+                if (config.showProgress && config.wordsPerRound > 0) {
+                    dom.startAllBtn.textContent = "Practice " + config.wordsPerRound + " words (mistakes first) \u2192";
+                } else {
+                    dom.startAllBtn.textContent = config.wordsPerRound > 0
+                        ? "All Words (" + config.wordsPerRound + " per round)"
+                        : "All Words (" + config.words.length + ")";
+                }
             }
             if (dom.startMistakesBtn) {
                 dom.startMistakesBtn.textContent = "Practice Mistakes";
@@ -1052,13 +1246,23 @@ var SpellingBeeEngine = (function () {
             if (dom.mistakesGroup) show(dom.mistakesGroup);
         } else {
             if (dom.startAllBtn) {
-                dom.startAllBtn.textContent = config.wordsPerRound > 0
-                    ? "START (" + config.wordsPerRound + " words)"
-                    : "START";
+                if (config.showProgress && config.wordsPerRound > 0) {
+                    dom.startAllBtn.textContent = "Practice " + config.wordsPerRound + " words \u2192";
+                } else {
+                    dom.startAllBtn.textContent = config.wordsPerRound > 0
+                        ? "START (" + config.wordsPerRound + " words)"
+                        : "START";
+                }
             }
             if (dom.mistakesGroup) hide(dom.mistakesGroup);
         }
 
+        // Tournament progress tracker (opt-in)
+        if (config.showProgress) {
+            var existing = dom.welcomeScreen.querySelector(".tournament-progress");
+            if (existing) existing.remove();
+            dom.welcomeScreen.insertBefore(buildProgressTracker(), dom.startAllBtn);
+        }
     }
 
     // =====================
