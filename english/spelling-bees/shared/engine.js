@@ -726,22 +726,25 @@ var SpellingBeeEngine = (function () {
         }
         window.speechSynthesis.cancel();
 
-        // Slow mode nebo chybějící audioPath: vždy TTS
-        if (slow || !config.audioPath) {
+        if (!config.audioPath) {
             speakViaTTS(text, slow);
             return;
         }
 
-        // Pre-recorded MP3
+        // Pre-recorded WAV — pomalé přehrání přes playbackRate
         var filename = wordToAudioFilename(text);
         var audio = audioCache[filename] || new Audio(config.audioPath + filename);
         currentAudio = audio;
         audio.currentTime = 0;
+        audio.playbackRate = slow ? 0.65 : 1.0;
         audio.play().catch(function () {
             currentAudio = null;
-            speakViaTTS(text, false); // fallback na TTS
+            speakViaTTS(text, slow); // fallback na TTS
         });
-        audio.onended = function () { currentAudio = null; };
+        audio.onended = function () {
+            audio.playbackRate = 1.0; // reset pro příští přehrání z cache
+            currentAudio = null;
+        };
     }
 
     // =====================

@@ -2,9 +2,10 @@
 // generate-audio.js — generuje WAV audio soubory pro Spelling Bee sety pomocí Gemini TTS API
 //
 // Použití:
-//   node scripts/generate-audio.js                    # všechny sety bez audio
-//   node scripts/generate-audio.js --set 2026-03-23   # konkrétní set
-//   node scripts/generate-audio.js --all              # přegenerovat vše
+//   node scripts/generate-audio.js                           # všechny sety bez audio
+//   node scripts/generate-audio.js --set 2026-03-23          # konkrétní set
+//   node scripts/generate-audio.js --all                     # přegenerovat vše
+//   node scripts/generate-audio.js --set 2026-03-23 --force  # přegenerovat i existující soubory
 //
 // Vyžaduje: GEMINI_API_KEY v prostředí nebo v souboru .env
 
@@ -120,7 +121,7 @@ function markAudioInWordsJs(setId) {
 }
 
 // --- Generování audia pro jeden set -----------------------------------------
-async function generateAudioForSet(setId, set, apiKey) {
+async function generateAudioForSet(setId, set, apiKey, force) {
     const audioDir = path.join(SETS_DIR, setId, 'audio');
     if (!fs.existsSync(audioDir)) {
         fs.mkdirSync(audioDir, { recursive: true });
@@ -134,7 +135,7 @@ async function generateAudioForSet(setId, set, apiKey) {
         const filename = wordToFilename(word);
         const outPath  = path.join(audioDir, filename);
 
-        if (fs.existsSync(outPath)) {
+        if (fs.existsSync(outPath) && !force) {
             console.log(`  ⏭  ${word} (již existuje)`);
             ok++;
             continue;
@@ -172,6 +173,7 @@ async function main() {
     const args   = process.argv.slice(2);
     const setArg = args.includes('--set') ? args[args.indexOf('--set') + 1] : null;
     const doAll  = args.includes('--all');
+    const force  = args.includes('--force');
 
     const sets = loadSets();
 
@@ -200,7 +202,7 @@ async function main() {
     let totalWords = 0;
     for (let i = 0; i < targets.length; i++) {
         const [setId, set] = targets[i];
-        const ok = await generateAudioForSet(setId, set, API_KEY);
+        const ok = await generateAudioForSet(setId, set, API_KEY, force);
         totalOk    += ok;
         totalWords += set.words.length;
 
