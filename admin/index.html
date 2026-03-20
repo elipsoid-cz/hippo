@@ -2192,7 +2192,7 @@ async function _renderAudioWordList(id, headerHtml) {
 
     const rows = words.map(w => exists[w]
         ? `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);">
-               <button onclick="_playAdminWord(${JSON.stringify(id)},${JSON.stringify(w)})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.1rem 0.3rem;">▶️</button>
+               <button onclick="_playAdminWord(${JSON.stringify(id).replace(/"/g,'&quot;')},${JSON.stringify(w).replace(/"/g,'&quot;')})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.1rem 0.3rem;">▶️</button>
                <span style="font-size:0.95rem;">${escHtml(w)}</span>
            </div>`
         : `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);opacity:0.45;">
