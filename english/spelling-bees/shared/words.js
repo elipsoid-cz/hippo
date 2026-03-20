@@ -13,7 +13,7 @@ var FIREBASE_CONFIG = {
 };
 
 // Tournament pin — set to true to feature tournament card at top of homepage
-var TOURNAMENT_PINNED = false;
+var TOURNAMENT_PINNED = true;
 
 var SPELLING_BEE_SETS = {
     "2026-01-26": {
