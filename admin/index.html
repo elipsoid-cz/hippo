@@ -181,6 +181,7 @@ input::placeholder { color: var(--text-muted); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-success { background: var(--success); color: #fff; }
 .btn-warning { background: var(--warning); color: #fff; }
+.btn-info    { background: #0ea5e9; color: #fff; }
 .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
 
 /* ── Cards ── */
@@ -690,6 +691,31 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
 </div>
 
 <!-- ══════════════════════════════════════════════════
+     AUDIO MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="audio-modal">
+    <div class="modal" style="max-width:520px;">
+        <div class="modal-header">
+            <h2 id="audio-modal-title">Audio výslovnost</h2>
+            <button class="modal-close" onclick="closeAudioModal()">✕</button>
+        </div>
+
+        <div id="audio-modal-body" style="text-align:center; padding:0.5rem 0 1.25rem;">
+            <!-- filled by JS -->
+        </div>
+
+        <div style="background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.25); border-radius:var(--radius); padding:0.75rem 1rem; font-size:0.82rem; color:var(--text-muted); margin-bottom:1.25rem;">
+            ⚠️ Generování audia volá <strong>Gemini TTS API</strong> a stojí peníze. Pokračuj jen pokud jsi si tím jistý.
+        </div>
+
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="closeAudioModal()">Zavřít</button>
+            <button class="btn btn-info" id="audio-generate-btn" onclick="doTriggerAudio()">🔊 Vygenerovat audio</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
      LOADING OVERLAY
 ══════════════════════════════════════════════════ -->
 <div class="loading-overlay" id="loading-overlay">
@@ -756,6 +782,12 @@ let _coverPollTimer  = null;  // setInterval handle
 let _coverPollRunId  = null;  // GitHub run ID once discovered
 let _coverPollSetId  = null;  // which set is being polled
 let _coverPollStart  = 0;     // Date.now() when polling started
+
+// Audio polling state
+let _audioPollTimer  = null;
+let _audioPollRunId  = null;
+let _audioPollSetId  = null;
+let _audioPollStart  = 0;
 
 // ══════════════════════════════════════════════════════════
 //  Toast
@@ -1206,6 +1238,7 @@ function renderSetsTable() {
                 <div class="set-row-actions">
                     <button class="btn btn-secondary btn-sm" onclick="openSetEditor('${key}')">Upravit</button>
                     <button class="btn btn-warning btn-sm" onclick="triggerCover('${key}')">🖼 Cover</button>
+                    <button class="btn btn-info btn-sm" onclick="triggerAudio('${key}')">🔊 Audio</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteSet('${key}')">Smazat</button>
                 </div>
             </td>
@@ -2089,6 +2122,201 @@ function _startBgCoverPoll(id, dispatchedAt) {
         },
         onAuthError() {
             _closeCoverBgBanner();
+        },
+    });
+}
+
+// ══════════════════════════════════════════════════════════
+//  Trigger audio workflow
+// ══════════════════════════════════════════════════════════
+let _audioSetId = null;
+
+function triggerAudio(id) {
+    _audioSetId = id;
+    const set = setsData[id] || {};
+    document.getElementById('audio-modal-title').textContent = `Audio — ${set.title || id}`;
+
+    const body = document.getElementById('audio-modal-body');
+    if (set.audio) {
+        body.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">Tento set již má vygenerované audio soubory.</div>`;
+    } else {
+        body.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">Audio soubory ještě nebyly vygenerovány.</div>`;
+    }
+
+    document.getElementById('audio-generate-btn').disabled = false;
+    document.getElementById('audio-generate-btn').textContent = '🔊 Vygenerovat audio';
+    document.getElementById('audio-modal').classList.add('open');
+}
+
+function closeAudioModal() {
+    _stopAudioPoll();
+    document.getElementById('audio-modal').classList.remove('open');
+    _audioSetId = null;
+}
+
+document.getElementById('audio-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAudioModal();
+});
+
+async function _dispatchAudioWorkflow(id) {
+    const resp = await fetch(
+        `${WORKER_URL}/github/repos/${REPO}/actions/workflows/generate-audio.yml/dispatches`,
+        {
+            method: 'POST',
+            headers: ghHeaders(),
+            body: JSON.stringify({ ref: BRANCH, inputs: { set_id: id } })
+        }
+    );
+
+    if (!resp.ok && resp.status !== 204) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(`${resp.status}: ${err.message || resp.statusText}`);
+    }
+}
+
+// ── Audio polling engine ──────────────────────────────────
+
+function _stopAudioPoll() {
+    if (_audioPollTimer) { clearInterval(_audioPollTimer); _audioPollTimer = null; }
+    _audioPollRunId = null;
+    _audioPollSetId = null;
+    _audioPollStart = 0;
+}
+
+function _ghAudioWorkflowUrl() {
+    return `https://github.com/${REPO}/actions/workflows/generate-audio.yml`;
+}
+
+// callbacks: { onStatus(status, runId), onSuccess(runId), onFailure(runId, conclusion), onTimeout(), onAuthError() }
+function _pollAudioWorkflow(setId, dispatchedAt, callbacks) {
+    _stopAudioPoll();
+    _audioPollSetId = setId;
+    _audioPollStart = Date.now();
+
+    const DISCOVERY_TIMEOUT = 30_000;
+    const TOTAL_TIMEOUT     = 180_000;
+    const INTERVAL          = 5_000;
+
+    async function tick() {
+        const elapsed = Date.now() - _audioPollStart;
+        if (elapsed > TOTAL_TIMEOUT) {
+            _stopAudioPoll();
+            callbacks.onTimeout();
+            return;
+        }
+
+        try {
+            if (!_audioPollRunId) {
+                const resp = await fetch(
+                    `${WORKER_URL}/github/repos/${REPO}/actions/workflows/generate-audio.yml/runs?per_page=10`,
+                    { headers: ghHeaders() }
+                );
+                if (resp.status === 401) { _stopAudioPoll(); callbacks.onAuthError(); return; }
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const cutoff = dispatchedAt - 10_000;
+                const run = (data.workflow_runs || []).find(r =>
+                    r.head_branch === BRANCH && new Date(r.created_at).getTime() >= cutoff
+                );
+                if (run) {
+                    _audioPollRunId = run.id;
+                    callbacks.onStatus(run.status, run.id);
+                } else if (elapsed > DISCOVERY_TIMEOUT) {
+                    _stopAudioPoll();
+                    callbacks.onTimeout();
+                }
+            } else {
+                const resp = await fetch(
+                    `${WORKER_URL}/github/repos/${REPO}/actions/runs/${_audioPollRunId}`,
+                    { headers: ghHeaders() }
+                );
+                if (resp.status === 401) { _stopAudioPoll(); callbacks.onAuthError(); return; }
+                if (!resp.ok) return;
+                const run = await resp.json();
+                callbacks.onStatus(run.status, run.id);
+                if (run.status === 'completed') {
+                    _stopAudioPoll();
+                    if (run.conclusion === 'success') callbacks.onSuccess(run.id);
+                    else callbacks.onFailure(run.id, run.conclusion);
+                }
+            }
+        } catch (e) {
+            console.warn('Audio poll error:', e);
+        }
+    }
+
+    tick();
+    _audioPollTimer = setInterval(tick, INTERVAL);
+}
+
+function _showAudioModalStatus(icon, text, linkHtml = '') {
+    const body = document.getElementById('audio-modal-body');
+    body.innerHTML = `
+        <div style="padding:1.5rem 0;">
+            <div style="font-size:2rem; margin-bottom:0.6rem;">${icon}</div>
+            <div id="audio-status-text" style="font-size:0.95rem; color:var(--text-muted);">${text}</div>
+            <div id="audio-status-link" style="margin-top:0.75rem; font-size:0.82rem;">${linkHtml}</div>
+        </div>`;
+}
+
+function _updateAudioModalStatusText(icon, text) {
+    const body = document.getElementById('audio-modal-body');
+    const iconEl = body.querySelector('div[style*="font-size:2rem"]');
+    const textEl = document.getElementById('audio-status-text');
+    if (iconEl) iconEl.textContent = icon;
+    if (textEl) textEl.textContent = text;
+}
+
+async function doTriggerAudio() {
+    if (!_audioSetId) return;
+    const id  = _audioSetId;
+    const btn = document.getElementById('audio-generate-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Spouštím…';
+
+    const dispatchedAt = Date.now();
+    try {
+        await _dispatchAudioWorkflow(id);
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '🔊 Vygenerovat audio';
+        _showAudioModalStatus('❌', `Chyba: ${e.message}`);
+        return;
+    }
+
+    _showAudioModalStatus('⏳', 'Čekám na spuštění workflow…');
+
+    _pollAudioWorkflow(id, dispatchedAt, {
+        onStatus(status) {
+            const labels = { queued: 'Workflow ve frontě…', in_progress: 'Generuji audio soubory…' };
+            const icons  = { queued: '⏳', in_progress: '🔄' };
+            if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
+        },
+        onSuccess(runId) {
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit na GitHubu</a>`;
+            _showAudioModalStatus('✅', 'Audio úspěšně vygenerováno!', link);
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat znovu';
+            setsData[id] = setsData[id] || {};
+            setsData[id].audio = true;
+            renderSetsTable();
+        },
+        onFailure(runId, conclusion) {
+            _showAudioModalStatus('❌', `Generování selhalo (${conclusion}).`,
+                `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit log na GitHubu</a>`);
+            btn.disabled = false;
+            btn.textContent = '🔊 Zkusit znovu';
+        },
+        onTimeout() {
+            _showAudioModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
+                `<a href="${_ghAudioWorkflowUrl()}" target="_blank">Zkontroluj Actions na GitHubu</a>`);
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat znovu';
+        },
+        onAuthError() {
+            _showAudioModalStatus('🔒', 'Relace vypršela — přihlaš se znovu.');
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat audio';
         },
     });
 }

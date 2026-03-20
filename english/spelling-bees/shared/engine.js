@@ -14,6 +14,7 @@ var SpellingBeeEngine = (function () {
         wordsPerRound: 0, // 0 = use all words; >0 = pick N words per round (tournament mode)
         translations: {}, // optional: lowercase word -> Czech translation
         cover: null,      // optional: URL to cover image (shown on welcome screen)
+        audioPath: null,  // optional: base URL for pre-recorded MP3 files (e.g. '../2026-01-26/audio/')
         showProgress: false, // if true: track seen words + show progress bar on welcome screen
     };
 
@@ -594,6 +595,8 @@ var SpellingBeeEngine = (function () {
     // =====================
 
     var preferredVoice = null;
+    var currentAudio   = null; // currently playing pre-recorded Audio object
+    var audioCache     = {};   // preloaded Audio objects keyed by filename
 
     function initVoices() {
         var voices = window.speechSynthesis.getVoices();
@@ -686,7 +689,23 @@ var SpellingBeeEngine = (function () {
         } catch (e) { /* Web Audio not available */ }
     }
 
-    function speak(text, slow) {
+    // MUSÍ být identické s wordToFilename() v scripts/generate-audio.js
+    function wordToAudioFilename(text) {
+        return text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.mp3';
+    }
+
+    function preloadAudio() {
+        if (!config.audioPath) return;
+        audioCache = {};
+        config.words.forEach(function (word) {
+            var filename = wordToAudioFilename(word);
+            var audio = new Audio(config.audioPath + filename);
+            audio.preload = 'auto';
+            audioCache[filename] = audio;
+        });
+    }
+
+    function speakViaTTS(text, slow) {
         window.speechSynthesis.cancel();
         var msg = new SpeechSynthesisUtterance();
         msg.text = text;
@@ -696,6 +715,33 @@ var SpellingBeeEngine = (function () {
             msg.voice = preferredVoice;
         }
         window.speechSynthesis.speak(msg);
+    }
+
+    function speak(text, slow) {
+        // Zastav případně hrající audio
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            currentAudio = null;
+        }
+        window.speechSynthesis.cancel();
+
+        // Slow mode nebo chybějící audioPath: vždy TTS
+        if (slow || !config.audioPath) {
+            speakViaTTS(text, slow);
+            return;
+        }
+
+        // Pre-recorded MP3
+        var filename = wordToAudioFilename(text);
+        var audio = audioCache[filename] || new Audio(config.audioPath + filename);
+        currentAudio = audio;
+        audio.currentTime = 0;
+        audio.play().catch(function () {
+            currentAudio = null;
+            speakViaTTS(text, false); // fallback na TTS
+        });
+        audio.onended = function () { currentAudio = null; };
     }
 
     // =====================
@@ -1406,6 +1452,7 @@ var SpellingBeeEngine = (function () {
                 }
             }
             cacheDom();
+            preloadAudio();
             // Initialize TTS voices (may load async)
             initVoices();
             if (window.speechSynthesis.onvoiceschanged !== undefined) {

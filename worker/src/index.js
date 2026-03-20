@@ -26,6 +26,8 @@ const GITHUB_PATH_PREFIXES = [
   `/repos/${ALLOWED_REPO}/git/`,
   `/repos/${ALLOWED_REPO}/actions/workflows/generate-cover.yml/dispatches`,
   `/repos/${ALLOWED_REPO}/actions/workflows/generate-cover.yml/runs`,
+  `/repos/${ALLOWED_REPO}/actions/workflows/generate-audio.yml/dispatches`,
+  `/repos/${ALLOWED_REPO}/actions/workflows/generate-audio.yml/runs`,
   `/repos/${ALLOWED_REPO}/actions/runs/`,
 ];
 
