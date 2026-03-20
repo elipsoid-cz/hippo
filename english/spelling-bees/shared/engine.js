@@ -1194,7 +1194,7 @@ var SpellingBeeEngine = (function () {
             '<div class="tp-stats">' +
                 '<span class="tp-stat tp-stat-mastered">\u2705\u00A0' + mastered + ' mastered</span>' +
                 '<span class="tp-stat tp-stat-learning">\uD83D\uDD04\u00A0' + learning + ' learning</span>' +
-                '<span class="tp-stat tp-stat-notseen">\u25A1\u00A0' + notSeen + ' not seen</span>' +
+                '<span class="tp-stat tp-stat-notseen">\u25CB\u00A0' + notSeen + ' not seen</span>' +
             '</div>';
         return el;
     }
