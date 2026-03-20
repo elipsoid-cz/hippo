@@ -2155,8 +2155,8 @@ async function _renderAudioWordList(id, headerHtml) {
     // Zkontroluj existenci každého WAV souboru
     const exists = {};
     await Promise.all(words.map(async w => {
-        const url = `../english/spelling-bees/${id}/audio/${_wordToAudioFilename(w)}`;
-        try { exists[w] = (await fetch(url, { method: 'HEAD' })).ok; }
+        const url = `../english/spelling-bees/${id}/audio/${_wordToAudioFilename(w)}?t=${Date.now()}`;
+        try { exists[w] = (await fetch(url, { method: 'HEAD', cache: 'no-store' })).ok; }
         catch { exists[w] = false; }
     }));
 
@@ -2354,7 +2354,7 @@ async function doTriggerAudio() {
             if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
         },
         async onSuccess(runId) {
-            const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit na GitHubu</a>`;
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit na GitHubu</a>`;
             setsData[id] = setsData[id] || {};
             setsData[id].audio = true;
             renderSetsTable();
@@ -2364,7 +2364,7 @@ async function doTriggerAudio() {
                 `<div style="color:var(--success,#22c55e); margin-bottom:0.75rem;">✅ Audio vygenerováno! ${link}</div>`);
         },
         async onFailure(runId, conclusion) {
-            const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit log na GitHubu</a>`;
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit log na GitHubu</a>`;
             btn.disabled = false;
             btn.textContent = '🔊 Zkusit znovu';
             await _renderAudioWordList(id,
