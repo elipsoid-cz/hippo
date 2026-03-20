@@ -130,16 +130,6 @@
             .card.card-tournament:hover {
                 background-color: #3d5166;
             }
-            .card-pin-banner {
-                background: linear-gradient(135deg, #e67e22, #f39c12);
-                color: #fff;
-                text-align: center;
-                padding: 0.4rem 1rem;
-                margin: -1.5rem -2rem 1.2rem -2rem;
-                font-weight: bold;
-                font-size: 0.88rem;
-                letter-spacing: 0.04em;
-            }
             .card-icon {
                 font-size: 3rem;
                 margin-bottom: 1rem;
@@ -356,7 +346,7 @@
         </div>
 
         <footer>
-            <small>v1.8.4</small>
+            <small>v1.8.5</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
@@ -401,7 +391,6 @@
                 tournament.className = 'card card-tournament';
                 tournament.innerHTML =
                     '<div class="card-cover"><img src="english/spelling-bees/tournament/cover-thumb.jpg" alt="Tournament"></div>' +
-                    (pinned ? '<div class="card-pin-banner">🏆 Turnaj se blíží!</div>' : '') +
                     '<div class="card-title">Tournament Practice</div>' +
                     '<div class="card-description">Practice all ' + totalWords +
                         ' words from ' + totalSets +
