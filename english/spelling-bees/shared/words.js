@@ -107,6 +107,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-16": {
+        audio: true,
         cover: true,
         title: "February 16",
         date: "2026-02-16",
