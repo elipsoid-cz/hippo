@@ -545,10 +545,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
     <!-- ── Tab: Leaderboard ── -->
     <div class="tab-content" id="tab-leaderboard">
         <div class="lb-toolbar">
-            <select id="lb-set-select" style="max-width:250px;">
+            <select id="lb-set-select" style="max-width:250px;" onchange="loadLeaderboard()">
                 <option value="">— Vyberte set —</option>
             </select>
-            <button class="btn btn-primary" onclick="loadLeaderboard()">Načíst</button>
             <button class="btn btn-danger btn-sm" id="lb-delete-all-btn" style="display:none;" onclick="deleteAllScores()">Smazat vše</button>
         </div>
         <div class="card" style="padding:0.75rem; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
@@ -2036,6 +2035,7 @@ function populateLbSelect() {
     const sel = document.getElementById('lb-set-select');
     const keys = Object.keys(setsData).sort().reverse();
     sel.innerHTML = '<option value="">— Vyberte set —</option>' +
+        '<option value="tournament">tournament — Tournament Practice</option>' +
         keys.map(k => `<option value="${k}">${k} — ${escHtml(setsData[k].title || '')}</option>`).join('');
 }
 
@@ -2071,7 +2071,7 @@ function loadScript(src) {
 
 async function loadLeaderboard() {
     const setId = document.getElementById('lb-set-select').value;
-    if (!setId) { toast('Vyberte set', 'warning'); return; }
+    if (!setId) return;
 
     const content = document.getElementById('lb-content');
     const deleteAllBtn = document.getElementById('lb-delete-all-btn');
@@ -2090,55 +2090,77 @@ async function loadLeaderboard() {
         const scores = [];
         snap.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
 
-        // Sort: score% desc, totalAttempts asc, bestStreak desc, date asc
-        scores.sort((a, b) => {
-            const aPct = a.total > 0 ? a.score / a.total : 0;
-            const bPct = b.total > 0 ? b.score / b.total : 0;
-            if (bPct !== aPct) return bPct - aPct;
-            const aAtt = a.totalAttempts || 999;
-            const bAtt = b.totalAttempts || 999;
-            if (aAtt !== bAtt) return aAtt - bAtt;
-            const aStr = a.bestStreak || 0;
-            const bStr = b.bestStreak || 0;
-            if (bStr !== aStr) return bStr - aStr;
-            return (a.date || '').localeCompare(b.date || '');
-        });
+        const isMastery = scores.some(s => s.masteredCount !== undefined);
+
+        if (isMastery) {
+            // Mastery sort: masteredCount desc, date asc (first achiever wins tiebreaker)
+            scores.sort((a, b) => {
+                const ca = a.masteredCount || 0, cb = b.masteredCount || 0;
+                if (cb !== ca) return cb - ca;
+                return (a.date || '').localeCompare(b.date || '');
+            });
+        } else {
+            // Regular sort: score% desc, totalAttempts asc, bestStreak desc, date asc
+            scores.sort((a, b) => {
+                const aPct = a.total > 0 ? a.score / a.total : 0;
+                const bPct = b.total > 0 ? b.score / b.total : 0;
+                if (bPct !== aPct) return bPct - aPct;
+                const aAtt = a.totalAttempts || 999;
+                const bAtt = b.totalAttempts || 999;
+                if (aAtt !== bAtt) return aAtt - bAtt;
+                const aStr = a.bestStreak || 0;
+                const bStr = b.bestStreak || 0;
+                if (bStr !== aStr) return bStr - aStr;
+                return (a.date || '').localeCompare(b.date || '');
+            });
+        }
 
         deleteAllBtn.style.display = '';
         deleteAllBtn.dataset.setId = setId;
 
         const rankClass = (i) => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
 
+        const thead = isMastery
+            ? `<tr><th>#</th><th>Přezdívka</th><th>Zvládnuto</th><th class="col-date">Datum</th><th></th></tr>`
+            : `<tr><th>#</th><th>Přezdívka</th><th>Skóre</th><th>Správně</th><th class="col-attempts">Pokusy</th><th class="col-streak">Streak</th><th class="col-date">Datum</th><th></th></tr>`;
+
+        const rows = scores.map((s, i) => {
+            const rc = rankClass(i);
+            if (isMastery) {
+                const mc = s.masteredCount || 0;
+                const tw = s.totalWords || '?';
+                const isAll = mc > 0 && mc >= tw;
+                return `<tr>
+                    <td><span class="rank-num ${rc}">${i + 1}</span></td>
+                    <td><strong>${escHtml(s.nickname || s.id)}</strong></td>
+                    <td><span class="badge badge-${isAll ? 'success' : mc > 0 ? 'warning' : 'secondary'}">${mc} / ${tw}</span>${isAll ? ' ⭐' : ''}</td>
+                    <td class="col-date" style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                            onclick="deleteScore('${setId}', '${escHtml(s.id)}')">Smazat</button>
+                    </td>
+                </tr>`;
+            } else {
+                const pct = s.total > 0 ? Math.round(s.score / s.total * 100) : 0;
+                return `<tr>
+                    <td><span class="rank-num ${rc}">${i + 1}</span></td>
+                    <td><strong>${escHtml(s.nickname || s.id)}</strong></td>
+                    <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'}">${pct}%</span></td>
+                    <td>${s.score || 0} / ${s.total || 0}</td>
+                    <td class="col-attempts">${s.totalAttempts || '-'}</td>
+                    <td class="col-streak">${s.bestStreak || '-'}</td>
+                    <td class="col-date" style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                            onclick="deleteScore('${setId}', '${escHtml(s.id)}')">Smazat</button>
+                    </td>
+                </tr>`;
+            }
+        }).join('');
+
         content.innerHTML = `<div class="card" style="padding:0;"><div class="table-wrap"><table>
-            <thead><tr>
-                <th>#</th>
-                <th>Přezdívka</th>
-                <th>Skóre</th>
-                <th>Správně</th>
-                <th class="col-attempts">Pokusy</th>
-                <th class="col-streak">Streak</th>
-                <th class="col-date">Datum</th>
-                <th></th>
-            </tr></thead>
-            <tbody>
-                ${scores.map((s, i) => {
-                    const pct = s.total > 0 ? Math.round(s.score / s.total * 100) : 0;
-                    const rc = rankClass(i);
-                    return `<tr>
-                        <td><span class="rank-num ${rc}">${i + 1}</span></td>
-                        <td><strong>${escHtml(s.nickname || s.id)}</strong></td>
-                        <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'}">${pct}%</span></td>
-                        <td>${s.score || 0} / ${s.total || 0}</td>
-                        <td class="col-attempts">${s.totalAttempts || '-'}</td>
-                        <td class="col-streak">${s.bestStreak || '-'}</td>
-                        <td class="col-date" style="font-size:0.8rem; color:var(--text-muted);">${s.date ? s.date.slice(0, 10) : '-'}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm"
-                                onclick="deleteScore('${setId}', '${escHtml(s.id)}')">Smazat</button>
-                        </td>
-                    </tr>`;
-                }).join('')}
-            </tbody>
+            <thead>${thead}</thead>
+            <tbody>${rows}</tbody>
         </table></div></div>`;
 
     } catch (e) {
