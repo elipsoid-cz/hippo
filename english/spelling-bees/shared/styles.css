@@ -711,7 +711,7 @@ input:read-only {
     flex-wrap: wrap;
 }
 
-.tp-stat { font-size: 0.82rem; color: #7f8c8d; }
+.tp-stat { font-size: 0.95rem; color: #7f8c8d; }
 .tp-stat-mastered { color: var(--success); font-weight: 600; }
 .tp-stat-learning  { color: #e67e22; font-weight: 600; }
 .tp-stat-notseen   { color: #95a5a6; }
