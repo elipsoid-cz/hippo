@@ -691,7 +691,7 @@ var SpellingBeeEngine = (function () {
 
     // MUSÍ být identické s wordToFilename() v scripts/generate-audio.js
     function wordToAudioFilename(text) {
-        return text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.mp3';
+        return text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.wav';
     }
 
     function preloadAudio() {

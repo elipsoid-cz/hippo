@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// generate-audio.js — generuje MP3 audio soubory pro Spelling Bee sety pomocí Gemini TTS API
+// generate-audio.js — generuje WAV audio soubory pro Spelling Bee sety pomocí Gemini TTS API
 //
 // Použití:
 //   node scripts/generate-audio.js                    # všechny sety bez audio
@@ -10,11 +10,9 @@
 
 'use strict';
 
-const fs           = require('fs');
-const path         = require('path');
-const vm           = require('vm');
-const os           = require('os');
-const { execSync } = require('child_process');
+const fs  = require('fs');
+const path = require('path');
+const vm  = require('vm');
 
 // --- Načtení .env -----------------------------------------------------------
 const envPath = path.join(__dirname, '..', '.env');
@@ -47,11 +45,11 @@ function loadSets() {
 // --- Název souboru ----------------------------------------------------------
 // MUSÍ být identické s wordToAudioFilename() v engine.js
 function wordToFilename(word) {
-    return word.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.mp3';
+    return word.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.wav';
 }
 
 // --- Sestavení WAV bufferu z raw PCM ----------------------------------------
-// Gemini TTS vrací raw PCM (24kHz, 16-bit, mono) — musíme přidat WAV header
+// Gemini TTS vrací raw PCM (24kHz, 16-bit, mono) — přidáme WAV header
 function buildWavBuffer(pcmBase64) {
     const pcm    = Buffer.from(pcmBase64, 'base64');
     const header = Buffer.alloc(44);
@@ -71,17 +69,6 @@ function buildWavBuffer(pcmBase64) {
     header.writeUInt32LE(pcm.length, 40);        // data chunk size
 
     return Buffer.concat([header, pcm]);
-}
-
-// --- Konverze WAV → MP3 -----------------------------------------------------
-function wavToMp3(wavPath, mp3Path) {
-    try {
-        // macOS — afconvert (vestavěný)
-        execSync(`afconvert -f MP3f -d .mp3 "${wavPath}" "${mp3Path}"`, { stdio: 'pipe' });
-    } catch {
-        // Linux (GitHub Actions) — ffmpeg
-        execSync(`ffmpeg -y -i "${wavPath}" -codec:a libmp3lame -qscale:a 4 "${mp3Path}"`, { stdio: 'pipe' });
-    }
 }
 
 // --- Volání Gemini TTS API --------------------------------------------------
@@ -115,7 +102,7 @@ async function generateAudio(word, apiKey) {
     return buildWavBuffer(part.inlineData.data);
 }
 
-// --- Označení setu v words.js -----------------------------------------------
+// --- Označení setu v words.js (jen pokud aspoň jedno slovo uspělo) ----------
 function markAudioInWordsJs(setId) {
     let content      = fs.readFileSync(WORDS_JS, 'utf8');
     const marker     = `"${setId}": {`;
@@ -145,9 +132,9 @@ async function generateAudioForSet(setId, set, apiKey) {
     for (let i = 0; i < set.words.length; i++) {
         const word     = set.words[i];
         const filename = wordToFilename(word);
-        const mp3Path  = path.join(audioDir, filename);
+        const outPath  = path.join(audioDir, filename);
 
-        if (fs.existsSync(mp3Path)) {
+        if (fs.existsSync(outPath)) {
             console.log(`  ⏭  ${word} (již existuje)`);
             ok++;
             continue;
@@ -156,14 +143,8 @@ async function generateAudioForSet(setId, set, apiKey) {
         try {
             console.log(`  🔊 ${word}...`);
             const wavBuffer = await generateAudio(word, apiKey);
-
-            // Uložit jako temp WAV, konvertovat na MP3
-            const tmpWav = path.join(os.tmpdir(), `hippo-tts-${Date.now()}.wav`);
-            fs.writeFileSync(tmpWav, wavBuffer);
-            wavToMp3(tmpWav, mp3Path);
-            fs.unlinkSync(tmpWav);
-
-            const sizeKb = Math.round(fs.statSync(mp3Path).size / 1024);
+            fs.writeFileSync(outPath, wavBuffer);
+            const sizeKb = Math.round(fs.statSync(outPath).size / 1024);
             console.log(`  ✓  ${word} → ${filename} (${sizeKb} KB)`);
             ok++;
         } catch (e) {
@@ -176,8 +157,12 @@ async function generateAudioForSet(setId, set, apiKey) {
         }
     }
 
-    markAudioInWordsJs(setId);
-    console.log(`  words.js: audio: true přidáno`);
+    if (ok > 0) {
+        markAudioInWordsJs(setId);
+        console.log(`  words.js: audio: true přidáno (${ok}/${set.words.length} slov)`);
+    } else {
+        console.warn(`  Žádné soubory nebyly vygenerovány, words.js nezměněn.`);
+    }
 
     return ok;
 }
