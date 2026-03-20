@@ -521,6 +521,13 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
             <h2 style="font-size:1rem;">Spelling bee sety</h2>
             <button class="btn btn-primary" onclick="openSetEditor(null)">+ Nový set</button>
         </div>
+        <div class="card" id="tournament-pin-card" style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <strong>🏆 Tournament Practice — pozice na homepage</strong>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.2rem;" id="tournament-pin-status">Načítám…</div>
+            </div>
+            <button class="btn btn-sm btn-secondary" id="tournament-pin-btn" onclick="toggleTournamentPin()" disabled>…</button>
+        </div>
         <div class="card" style="padding:0;">
             <div class="table-wrap">
                 <table id="sets-table">
@@ -1053,6 +1060,63 @@ function replaceWordsJsBlock(raw, newBlock) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  Tournament pin helpers
+// ══════════════════════════════════════════════════════════
+function parseTournamentPinned(raw) {
+    const m = raw.match(/^var TOURNAMENT_PINNED = (.+);$/m);
+    return m ? m[1] === 'true' : false;
+}
+
+function replaceTournamentPinned(raw, value) {
+    return raw.replace(/^var TOURNAMENT_PINNED = .+;$/m, `var TOURNAMENT_PINNED = ${value};`);
+}
+
+function renderTournamentPinCard() {
+    const status = document.getElementById('tournament-pin-status');
+    const btn = document.getElementById('tournament-pin-btn');
+    if (!status || !btn) return;
+    const pinned = parseTournamentPinned(wordsJsRaw);
+    if (pinned) {
+        status.textContent = 'Připnutý nahoru — zobrazuje se jako první s bannerem "Turnaj se blíží!"';
+        btn.textContent = 'Odpíchnout dolů';
+        btn.className = 'btn btn-secondary btn-sm';
+    } else {
+        status.textContent = 'Na konci stránky (výchozí pozice)';
+        btn.textContent = 'Připnout nahoru';
+        btn.className = 'btn btn-primary btn-sm';
+    }
+    btn.disabled = false;
+}
+
+async function toggleTournamentPin() {
+    const btn = document.getElementById('tournament-pin-btn');
+    btn.disabled = true;
+    try {
+        const pinned = parseTournamentPinned(wordsJsRaw);
+        const newWordsJsRaw = replaceTournamentPinned(wordsJsRaw, !pinned);
+
+        showLoading('Načítám index.html…');
+        const indexFile = await ghGet(INDEX_PATH);
+        const indexRaw = decodeURIComponent(escape(atob(indexFile.content)));
+        const newIndexRaw = bumpVersion(indexRaw);
+
+        showLoading('Commituji na GitHub…');
+        const action = !pinned ? 'připnutí' : 'odpíchnutí';
+        await ghCommitMultiple([
+            { path: WORDS_PATH, content: newWordsJsRaw },
+            { path: INDEX_PATH, content: newIndexRaw },
+        ], `feat: ${action} tournament karty na homepage`);
+
+        toast(`Tournament ${!pinned ? 'připnut nahoru ✅' : 'odsunut dolů'}.`, 'success');
+        await loadAllData();
+    } catch (e) {
+        toast('Chyba: ' + e.message, 'error', 8000);
+        console.error(e);
+        btn.disabled = false;
+    }
+}
+
+// ══════════════════════════════════════════════════════════
 //  index.html version bump
 // ══════════════════════════════════════════════════════════
 function bumpVersion(htmlContent) {
@@ -1088,6 +1152,7 @@ async function loadAllData() {
 
         // Render everything
         renderSetsTable();
+        renderTournamentPinCard();
         populateLbSelect();
         runValidation();
 

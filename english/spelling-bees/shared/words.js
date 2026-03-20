@@ -12,6 +12,9 @@ var FIREBASE_CONFIG = {
     appId: "1:881228649401:web:2d81c97045155687a51c68"
 };
 
+// Tournament pin — set to true to feature tournament card at top of homepage
+var TOURNAMENT_PINNED = false;
+
 var SPELLING_BEE_SETS = {
     "2026-01-26": {
         cover: true,
