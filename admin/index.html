@@ -2367,22 +2367,22 @@ async function doTriggerAudio() {
             const icons  = { queued: '⏳', in_progress: '🔄' };
             if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
         },
-        async onSuccess(runId) {
+        onSuccess(runId) {
             const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit na GitHubu</a>`;
             setsData[id] = setsData[id] || {};
             setsData[id].audio = true;
             renderSetsTable();
             btn.disabled = false;
             btn.textContent = '🔊 Vygenerovat znovu';
-            await _renderAudioWordList(id,
-                `<div style="color:var(--success,#22c55e); margin-bottom:0.75rem;">✅ Audio vygenerováno! ${link}</div>`);
+            _showAudioModalStatus('✅', 'Audio vygenerováno!',
+                `${link} &nbsp;·&nbsp; <a href="#" style="color:inherit;text-decoration:underline;" onclick="event.preventDefault();_renderAudioWordList('${escHtml(id)}')">📋 Zobrazit slova</a>`);
         },
-        async onFailure(runId, conclusion) {
+        onFailure(runId, conclusion) {
             const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit log na GitHubu</a>`;
             btn.disabled = false;
             btn.textContent = '🔊 Zkusit znovu';
-            await _renderAudioWordList(id,
-                `<div style="color:var(--danger,#ef4444); margin-bottom:0.75rem;">❌ Generování selhalo (${conclusion}). ${link}</div>`);
+            _showAudioModalStatus('❌', `Generování selhalo (${conclusion}).`,
+                `${link} &nbsp;·&nbsp; <a href="#" style="color:inherit;text-decoration:underline;" onclick="event.preventDefault();_renderAudioWordList('${escHtml(id)}')">📋 Zobrazit slova</a>`);
         },
         onTimeout() {
             _showAudioModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
