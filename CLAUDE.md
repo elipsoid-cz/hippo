@@ -78,6 +78,21 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - Spelling bee karty jsou generovány dynamicky z `words.js` (JS na konci body)
 - Tournament badge (počet slov, počet setů) se počítá automaticky přes `getAllSpellingBeeWords()`
 - Každý set: popis = `set.description + ': ' + set.words.join(', ')`
+- **Tournament pin:** `var TOURNAMENT_PINNED = false/true` v `words.js` — pokud `true`, tournament karta se zobrazí jako první; přepíná se tlačítkem v admin záložce Sety
+
+### Tournament Practice (`english/spelling-bees/tournament/`)
+- Procvičuje všechna slova ze všech setů (78+ slov), 10 per round
+- Config: `showProgress: true` — zapíná mastery systém (ostatní sety ho nemají)
+- **Mastery systém:**
+  - Seen words: `localStorage` klíč `hippo-seen-tournament` — slova označená jako viděná po prvním odehrání kola
+  - Mastered = viděné AND bez chyby (odstraněno z mistakes po 3 správných za sebou)
+  - Progress tracker: 3-segment bar (mastered / learning / not seen) na welcome i final screen
+  - Výběr slov: mistakes → unseen → seen-clean (priority order)
+- **Mastery leaderboard** (odlišné schéma od běžných setů):
+  - Firestore dokument: `{ nickname, masteredCount, totalWords, date }`
+  - Řazení: masteredCount desc → date asc (první dosažení jako tiebreaker)
+  - Přepíše staré skóre jen pokud masteredCount vzrostl
+  - Admin leaderboard detekuje mastery entries přes `s.masteredCount !== undefined`
 
 ## Leaderboard (Firebase Firestore)
 - **Firebase projekt:** `hippo-cz` (free Spark tier)
@@ -98,7 +113,7 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - **Backend:** Cloudflare Worker (`worker/`) — proxy pro GitHub API a Gemini API
 - **JWT session:** po přihlášení Worker vrátí JWT (2h platnost), uložený v `sessionStorage`
 - **Záložky:** Sety | Leaderboard | Validace
-- **Sety:** přidat/upravit/smazat set; dynamické řádky slov (1–n); datum setu = unikátní klíč (`YYYY-MM-DD`), předvyplněno dnešním datem
+- **Sety:** přidat/upravit/smazat set; dynamické řádky slov (1–n); datum setu = unikátní klíč (`YYYY-MM-DD`), předvyplněno dnešním datem; widget "Tournament pin" (připnout/odpíchnout kartu na homepage) commituje `TOURNAMENT_PINNED` v `words.js`
 - **Commit:** atomický přes GitHub Git Trees API (5 kroků) přes Worker proxy, zároveň bumps verze v `index.html`
 - **Validace překladů:** Levenshtein similarita ≥ 60 % = varování; probíhá při ukládání, ne kontinuálně
 - **Cover:** tlačítko Cover zobrazí stávající obrázek, pak nabídne regeneraci přes GitHub Actions (`generate-cover.yml`); po dispatchnutí workflow se v modalu zobrazuje live stav (polling GitHub API každých 5 s, max 3 min); při auto-triggeru po uložení nového setu běží polling na pozadí a stav se zobrazuje v persistentním banneru dole na stránce
@@ -135,11 +150,44 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - Používá `GEMINI_API_KEY` z GitHub Secrets (neukládat nikam jinam!)
 - Výsledek: `english/spelling-bees/{setId}/cover.jpg` + `cover-thumb.jpg`, auto-commit
 
+## Audio systém (Spelling Bee)
+- **Technologie:** Gemini TTS API (`gemini-2.5-flash-preview-tts`) → raw PCM base64 → WAV (44-byte RIFF header, 24kHz/16bit/mono)
+- **Soubory:** `english/spelling-bees/{setId}/audio/{word}.wav` (slova s mezerami → pomlčka, apostrof a spec. znaky odstraněny)
+- **Filename normalizace:** `word.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '.wav'` — MUSÍ být stejná v `scripts/generate-audio.js` i `engine.js`
+- **Aktivace:** `audio: true` v `words.js` pro daný set; `engine.js` čte `audioPath` z configu
+- **Přehrávání:** HTML5 Audio s preloadem, `playbackRate=0.65` pro slow mode; Web Speech API fallback při chybě
+- **AudioCache:** `preloadAudio()` v `engine.js` přednačte všechna slova při startu hry (nulová latence)
+- **Hlas:** Puck (výchozí pro produkci, předat jako `--voice Puck`)
+- **Vygenerování:** `node scripts/generate-audio.js --set YYYY-MM-DD --voice Puck`
+  - Auto-retry: 3 pokusy per slovo, 20s prodleva mezi pokusy
+  - Rate limit: 21s prodleva mezi slovy (free tier 10 RPM, 100 RPD)
+  - `markAudioInWordsJs()` přidá `audio: true` do `words.js` jen pokud alespoň 1 slovo uspělo
+- **Kvóta Gemini TTS (Default Gemini Project, free tier):** 10 RPM, 100 RPD — resetuje o půlnoci UTC (1:00 CET)
+- **GitHub Secret `GEMINI_API_KEY`** → musí být klíč z **Default Gemini Project** (AI Studio), ne z hippo-cz
+- **POZOR:** hippo-cz Firebase projekt = Google Cloud projekt jsou jedno. Odebrání billingu z Firebase odebere billing z celého GCP projektu včetně Gemini API kvót.
+
+### GitHub Actions — generate-audio.yml
+- Spouští se přes `workflow_dispatch` s inputem `set_id`
+- Používá `GEMINI_API_KEY` z GitHub Secrets
+- Hlas: Puck (napevno v workflow)
+- `git stash` před `git pull --rebase` → `git stash pop` (kvůli změnám `words.js` při generování)
+- Výsledek: WAV soubory + `audio: true` v `words.js`, auto-commit
+
+### Admin — Audio modal
+- Tlačítko 🔊 Audio v tabulce setů (sloupec vpravo od Cover)
+- Zobrazuje počet vygenerovaných slov / celkový počet
+- Při otevření modálu: HEAD requesty pro každé slovo (zjistí existenci souboru)
+- Slova bez audia označena `—`, ostatní mají ▶️ tlačítko pro přehrání
+- Tlačítko "Dogenerovat zbývající (N)" spustí workflow jen pro chybějící slova
+- Po dokončení generování: tlačítko "📋 Zobrazit slova" (deployment delay ~1 min po commitu)
+- Hard refresh (Cmd+Shift+R) po nasazení pokud admin zobrazuje starý stav
+- ESC zavírá všechny modály (audio, cover, editor)
+
 ## Placená API volání
 - **DŮLEŽITÉ:** Před každým voláním API, které stojí peníze (Gemini image generation, Firebase paid tier, apod.), se vždy zeptej uživatele a počkej na jeho souhlas. Nespouštěj taková volání automaticky.
 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.8.7**
+- Aktuální verze: **v1.9.7**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!
