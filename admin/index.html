@@ -2144,26 +2144,60 @@ function _playAdminWord(setId, word) {
     _adminAudio.play();
 }
 
+async function _renderAudioWordList(id, headerHtml) {
+    const set = setsData[id] || {};
+    const words = set.words || [];
+    const body = document.getElementById('audio-modal-body');
+    const btn  = document.getElementById('audio-generate-btn');
+
+    body.innerHTML = `<div style="padding:0.75rem 0; color:var(--text-muted); font-size:0.9rem;">Načítám stav souborů…</div>`;
+
+    // Zkontroluj existenci každého WAV souboru
+    const exists = {};
+    await Promise.all(words.map(async w => {
+        const url = `../english/spelling-bees/${id}/audio/${_wordToAudioFilename(w)}`;
+        try { exists[w] = (await fetch(url, { method: 'HEAD' })).ok; }
+        catch { exists[w] = false; }
+    }));
+
+    const missing = words.filter(w => !exists[w]);
+    const rows = words.map(w => exists[w]
+        ? `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);">
+               <button onclick="_playAdminWord('${escHtml(id)}','${escHtml(w)}')" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.1rem 0.3rem;">▶️</button>
+               <span style="font-size:0.95rem;">${escHtml(w)}</span>
+           </div>`
+        : `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);opacity:0.45;">
+               <span style="font-size:1.1rem;padding:0.1rem 0.3rem;user-select:none;">—</span>
+               <span style="font-size:0.95rem;">${escHtml(w)}</span>
+           </div>`
+    ).join('');
+
+    const statusHtml = missing.length === 0
+        ? `<div style="margin-top:0.6rem;font-size:0.82rem;color:var(--success);">✓ Všechna slova mají audio</div>`
+        : `<div style="margin-top:0.6rem;font-size:0.82rem;color:var(--danger);">${missing.length} ${missing.length === 1 ? 'slovo nemá' : 'slova nemají'} audio: ${missing.map(escHtml).join(', ')}</div>`;
+
+    body.innerHTML = (headerHtml || '') + `<div style="text-align:left;padding:0.25rem 0 0.25rem;">${rows}${statusHtml}</div>`;
+
+    btn.disabled = false;
+    btn.textContent = missing.length > 0 ? `🔊 Dogenerovat zbývající (${missing.length})` : '🔊 Vygenerovat znovu';
+}
+
 function triggerAudio(id) {
     _audioSetId = id;
     const set = setsData[id] || {};
     document.getElementById('audio-modal-title').textContent = `Audio — ${set.title || id}`;
 
-    const body = document.getElementById('audio-modal-body');
-    if (set.audio && set.words && set.words.length) {
-        const rows = set.words.map(w => `
-            <div style="display:flex; align-items:center; gap:0.6rem; padding:0.3rem 0; border-bottom:1px solid var(--border);">
-                <button onclick="_playAdminWord('${escHtml(id)}', '${escHtml(w)}')"
-                        style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:0.1rem 0.3rem;">▶️</button>
-                <span style="font-size:0.95rem;">${escHtml(w)}</span>
-            </div>`).join('');
-        body.innerHTML = `<div style="text-align:left; padding:0.25rem 0 0.5rem;">${rows}</div>`;
+    const btn = document.getElementById('audio-generate-btn');
+    btn.disabled = false;
+
+    if (set.audio) {
+        _renderAudioWordList(id);
     } else {
-        body.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">Audio soubory ještě nebyly vygenerovány.</div>`;
+        document.getElementById('audio-modal-body').innerHTML =
+            `<div style="padding:1rem; color:var(--text-muted);">Audio soubory ještě nebyly vygenerovány.</div>`;
+        btn.textContent = '🔊 Vygenerovat audio';
     }
 
-    document.getElementById('audio-generate-btn').disabled = false;
-    document.getElementById('audio-generate-btn').textContent = set.audio ? '🔊 Vygenerovat znovu' : '🔊 Vygenerovat audio';
     document.getElementById('audio-modal').classList.add('open');
 }
 
@@ -2319,20 +2353,22 @@ async function doTriggerAudio() {
             const icons  = { queued: '⏳', in_progress: '🔄' };
             if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
         },
-        onSuccess(runId) {
+        async onSuccess(runId) {
             const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit na GitHubu</a>`;
-            _showAudioModalStatus('✅', 'Audio úspěšně vygenerováno!', link);
-            btn.disabled = false;
-            btn.textContent = '🔊 Vygenerovat znovu';
             setsData[id] = setsData[id] || {};
             setsData[id].audio = true;
             renderSetsTable();
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat znovu';
+            await _renderAudioWordList(id,
+                `<div style="color:var(--success,#22c55e); margin-bottom:0.75rem;">✅ Audio vygenerováno! ${link}</div>`);
         },
-        onFailure(runId, conclusion) {
-            _showAudioModalStatus('❌', `Generování selhalo (${conclusion}).`,
-                `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit log na GitHubu</a>`);
+        async onFailure(runId, conclusion) {
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank">Zobrazit log na GitHubu</a>`;
             btn.disabled = false;
             btn.textContent = '🔊 Zkusit znovu';
+            await _renderAudioWordList(id,
+                `<div style="color:var(--danger,#ef4444); margin-bottom:0.75rem;">❌ Generování selhalo (${conclusion}). ${link}</div>`);
         },
         onTimeout() {
             _showAudioModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
