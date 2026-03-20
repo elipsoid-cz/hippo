@@ -141,5 +141,5 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.7.1**
+- Aktuální verze: **v1.8.7**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!
