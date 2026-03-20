@@ -2131,31 +2131,58 @@ function _startBgCoverPoll(id, dispatchedAt) {
 // ══════════════════════════════════════════════════════════
 let _audioSetId = null;
 
+function _wordToAudioFilename(word) {
+    return word.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.wav';
+}
+
+let _adminAudio = null;
+
+function _playAdminWord(setId, word) {
+    if (_adminAudio) { _adminAudio.pause(); _adminAudio = null; }
+    const src = `../english/spelling-bees/${setId}/audio/${_wordToAudioFilename(word)}`;
+    _adminAudio = new Audio(src);
+    _adminAudio.play();
+}
+
 function triggerAudio(id) {
     _audioSetId = id;
     const set = setsData[id] || {};
     document.getElementById('audio-modal-title').textContent = `Audio — ${set.title || id}`;
 
     const body = document.getElementById('audio-modal-body');
-    if (set.audio) {
-        body.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">Tento set již má vygenerované audio soubory.</div>`;
+    if (set.audio && set.words && set.words.length) {
+        const rows = set.words.map(w => `
+            <div style="display:flex; align-items:center; gap:0.6rem; padding:0.3rem 0; border-bottom:1px solid var(--border);">
+                <button onclick="_playAdminWord('${escHtml(id)}', '${escHtml(w)}')"
+                        style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:0.1rem 0.3rem;">▶️</button>
+                <span style="font-size:0.95rem;">${escHtml(w)}</span>
+            </div>`).join('');
+        body.innerHTML = `<div style="text-align:left; padding:0.25rem 0 0.5rem;">${rows}</div>`;
     } else {
         body.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">Audio soubory ještě nebyly vygenerovány.</div>`;
     }
 
     document.getElementById('audio-generate-btn').disabled = false;
-    document.getElementById('audio-generate-btn').textContent = '🔊 Vygenerovat audio';
+    document.getElementById('audio-generate-btn').textContent = set.audio ? '🔊 Vygenerovat znovu' : '🔊 Vygenerovat audio';
     document.getElementById('audio-modal').classList.add('open');
 }
 
 function closeAudioModal() {
     _stopAudioPoll();
+    if (_adminAudio) { _adminAudio.pause(); _adminAudio = null; }
     document.getElementById('audio-modal').classList.remove('open');
     _audioSetId = null;
 }
 
 document.getElementById('audio-modal').addEventListener('click', function(e) {
     if (e.target === this) closeAudioModal();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('audio-modal').classList.contains('open'))  { closeAudioModal();  return; }
+    if (document.getElementById('cover-modal').classList.contains('open'))  { closeCoverModal();  return; }
+    if (document.getElementById('editor-modal').classList.contains('open')) { closeSetEditor();   return; }
 });
 
 async function _dispatchAudioWorkflow(id) {
