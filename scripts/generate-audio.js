@@ -155,7 +155,7 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
                 break;
             } catch (e) {
                 if (attempt < 3) {
-                    await new Promise(r => setTimeout(r, 3000));
+                    await new Promise(r => setTimeout(r, 20000));
                 } else {
                     console.error(`  ✗  ${word}: ${e.message}`);
                 }
@@ -163,9 +163,9 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
         }
         if (generated) ok++;
 
-        // Rate limiting: free tier = 15 RPM
+        // Rate limiting: gemini-2.5-flash-tts free tier = 3 RPM → min 21 s mezi požadavky
         if (i < set.words.length - 1) {
-            await new Promise(r => setTimeout(r, 4000));
+            await new Promise(r => setTimeout(r, 21000));
         }
     }
 
