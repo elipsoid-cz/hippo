@@ -2,10 +2,11 @@
 // generate-audio.js — generuje WAV audio soubory pro Spelling Bee sety pomocí Gemini TTS API
 //
 // Použití:
-//   node scripts/generate-audio.js                           # všechny sety bez audio
-//   node scripts/generate-audio.js --set 2026-03-23          # konkrétní set
-//   node scripts/generate-audio.js --all                     # přegenerovat vše
-//   node scripts/generate-audio.js --set 2026-03-23 --force  # přegenerovat i existující soubory
+//   node scripts/generate-audio.js                                        # všechny sety bez audio
+//   node scripts/generate-audio.js --set 2026-03-23                       # konkrétní set
+//   node scripts/generate-audio.js --all                                  # přegenerovat vše
+//   node scripts/generate-audio.js --set 2026-03-23 --force               # přegenerovat i existující soubory
+//   node scripts/generate-audio.js --set 2026-03-23 --force --voice Puck  # jiný hlas
 //
 // Vyžaduje: GEMINI_API_KEY v prostředí nebo v souboru .env
 
@@ -73,7 +74,7 @@ function buildWavBuffer(pcmBase64) {
 }
 
 // --- Volání Gemini TTS API --------------------------------------------------
-async function generateAudio(word, apiKey) {
+async function generateAudio(word, apiKey, voice) {
     const url  = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
     const resp = await fetch(url, {
         method:  'POST',
@@ -83,7 +84,7 @@ async function generateAudio(word, apiKey) {
             generationConfig: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
-                    voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+                    voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
                 },
             },
         }),
@@ -121,13 +122,13 @@ function markAudioInWordsJs(setId) {
 }
 
 // --- Generování audia pro jeden set -----------------------------------------
-async function generateAudioForSet(setId, set, apiKey, force) {
+async function generateAudioForSet(setId, set, apiKey, force, voice) {
     const audioDir = path.join(SETS_DIR, setId, 'audio');
     if (!fs.existsSync(audioDir)) {
         fs.mkdirSync(audioDir, { recursive: true });
     }
 
-    console.log(`\n[${setId}] ${set.title} (${set.words.length} slov)`);
+    console.log(`\n[${setId}] ${set.title} (${set.words.length} slov, hlas: ${voice})`);
 
     let ok = 0;
     for (let i = 0; i < set.words.length; i++) {
@@ -143,7 +144,7 @@ async function generateAudioForSet(setId, set, apiKey, force) {
 
         try {
             console.log(`  🔊 ${word}...`);
-            const wavBuffer = await generateAudio(word, apiKey);
+            const wavBuffer = await generateAudio(word, apiKey, voice);
             fs.writeFileSync(outPath, wavBuffer);
             const sizeKb = Math.round(fs.statSync(outPath).size / 1024);
             console.log(`  ✓  ${word} → ${filename} (${sizeKb} KB)`);
@@ -174,6 +175,7 @@ async function main() {
     const setArg = args.includes('--set') ? args[args.indexOf('--set') + 1] : null;
     const doAll  = args.includes('--all');
     const force  = args.includes('--force');
+    const voice  = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : 'Aoede';
 
     const sets = loadSets();
 
@@ -202,7 +204,7 @@ async function main() {
     let totalWords = 0;
     for (let i = 0; i < targets.length; i++) {
         const [setId, set] = targets[i];
-        const ok = await generateAudioForSet(setId, set, API_KEY, force);
+        const ok = await generateAudioForSet(setId, set, API_KEY, force, voice);
         totalOk    += ok;
         totalWords += set.words.length;
 
