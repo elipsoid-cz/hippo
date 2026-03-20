@@ -142,16 +142,26 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
             continue;
         }
 
-        try {
-            console.log(`  🔊 ${word}...`);
-            const wavBuffer = await generateAudio(word, apiKey, voice);
-            fs.writeFileSync(outPath, wavBuffer);
-            const sizeKb = Math.round(fs.statSync(outPath).size / 1024);
-            console.log(`  ✓  ${word} → ${filename} (${sizeKb} KB)`);
-            ok++;
-        } catch (e) {
-            console.error(`  ✗  ${word}: ${e.message}`);
+        let generated = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                if (attempt === 1) console.log(`  🔊 ${word}...`);
+                else console.log(`  ⟳  ${word}: pokus ${attempt}...`);
+                const wavBuffer = await generateAudio(word, apiKey, voice);
+                fs.writeFileSync(outPath, wavBuffer);
+                const sizeKb = Math.round(fs.statSync(outPath).size / 1024);
+                console.log(`  ✓  ${word} → ${filename} (${sizeKb} KB)`);
+                generated = true;
+                break;
+            } catch (e) {
+                if (attempt < 3) {
+                    await new Promise(r => setTimeout(r, 3000));
+                } else {
+                    console.error(`  ✗  ${word}: ${e.message}`);
+                }
+            }
         }
+        if (generated) ok++;
 
         // Rate limiting: free tier = 15 RPM
         if (i < set.words.length - 1) {
@@ -159,6 +169,11 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
         }
     }
 
+    const failed = set.words.filter(w => !fs.existsSync(path.join(audioDir, wordToFilename(w))));
+    if (failed.length > 0) {
+        console.error(`  ✗  Selhala slova: ${failed.join(', ')}`);
+        process.exitCode = 1;
+    }
     if (ok > 0) {
         markAudioInWordsJs(setId);
         console.log(`  words.js: audio: true přidáno (${ok}/${set.words.length} slov)`);
