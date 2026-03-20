@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Generate audio
-        run: node scripts/generate-audio.js --set "${{ inputs.set_id }}"
+        run: node scripts/generate-audio.js --set "${{ inputs.set_id }}" --voice Puck
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
