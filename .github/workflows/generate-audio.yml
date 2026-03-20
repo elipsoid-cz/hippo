@@ -27,7 +27,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Pull latest changes before commit
-        run: git pull --rebase origin main
+        run: git stash && git pull --rebase origin main && git stash pop || true
 
       - name: Commit and push audio files
         uses: stefanzweifel/git-auto-commit-action@v5
