@@ -628,6 +628,64 @@ var SpellingBeeEngine = (function () {
         }
     }
 
+    function playCompletionSound(scorePct) {
+        try {
+            var ac = new (window.AudioContext || window.webkitAudioContext)();
+            var t = ac.currentTime;
+
+            function tone(freq, start, dur, vol, type, detune) {
+                var osc = ac.createOscillator();
+                var gain = ac.createGain();
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.type = type || "sine";
+                osc.frequency.value = freq;
+                if (detune) osc.detune.value = detune;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(vol || 0.2, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+                osc.start(start);
+                osc.stop(start + dur);
+            }
+
+            function sweep(freqFrom, freqTo, start, dur, vol) {
+                var osc = ac.createOscillator();
+                var gain = ac.createGain();
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(freqFrom, start);
+                osc.frequency.exponentialRampToValueAtTime(freqTo, start + dur * 0.65);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(vol || 0.16, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+                osc.start(start);
+                osc.stop(start + dur);
+            }
+
+            if (scorePct >= 100) {
+                // 🏆 Perfektní — plný sweep nahoru + dur akord se shimmerem
+                sweep(180, 1047, t, 0.28, 0.16);
+                tone(1047, t + 0.25, 0.75, 0.17, "sine",   0);
+                tone(1319, t + 0.25, 0.75, 0.14, "sine",   0);
+                tone(1568, t + 0.25, 0.75, 0.11, "sine",   0);
+                tone(1047, t + 0.25, 0.75, 0.08, "sine",  12);
+                tone(1568, t + 0.25, 0.75, 0.06, "sine", -10);
+            } else if (scorePct >= 60) {
+                // 👍 Střední — kratší sweep + dur akord
+                sweep(300, 784, t, 0.22, 0.13);
+                tone(784,  t + 0.20, 0.55, 0.16, "sine");
+                tone(988,  t + 0.20, 0.55, 0.12, "sine");
+                tone(1175, t + 0.20, 0.55, 0.09, "sine");
+            } else {
+                // 😬 Špatný — sestupný sweep + mollový interval
+                sweep(600, 220, t, 0.35, 0.14);
+                tone(311, t + 0.30, 0.65, 0.15, "sine");
+                tone(370, t + 0.30, 0.65, 0.10, "sine");
+            }
+        } catch (e) { /* Web Audio not available */ }
+    }
+
     function speak(text, slow) {
         window.speechSynthesis.cancel();
         var msg = new SpeechSynthesisUtterance();
@@ -1060,7 +1118,10 @@ var SpellingBeeEngine = (function () {
                 word +
                 "</strong></div>";
             show(dom.nextBtn);
-            setTimeout(function () { dom.nextBtn.focus(); }, 50);
+            setTimeout(function () {
+                speak(word, false);
+                dom.nextBtn.focus();
+            }, 50);
             updateScoreBar();
         } else {
             // WRONG but attempts remain
@@ -1071,6 +1132,7 @@ var SpellingBeeEngine = (function () {
                 state.attempt,
             );
             dom.userInput.value = "";
+            speak(state.currentWords[state.currentIndex], true);
             dom.userInput.focus();
         }
     }
@@ -1083,6 +1145,10 @@ var SpellingBeeEngine = (function () {
     function showFinal() {
         hide(dom.gameZone);
         show(dom.finalScreen);
+        var scorePct = state.currentWords.length > 0
+            ? Math.round(state.score / state.currentWords.length * 100)
+            : 0;
+        playCompletionSound(scorePct);
 
         // Remove leftover save panel from a previous All Words game
         var existingPanel = document.getElementById("save-score-panel");
