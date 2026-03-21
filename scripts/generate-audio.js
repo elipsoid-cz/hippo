@@ -80,7 +80,7 @@ async function generateAudio(word, apiKey, voice) {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-            contents: [{ parts: [{ text: `Say the word: ${word}` }] }],
+            contents: [{ parts: [{ text: `Say the English word "${word}" clearly.` }] }],
             generationConfig: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
