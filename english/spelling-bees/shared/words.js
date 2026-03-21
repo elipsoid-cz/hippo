@@ -17,6 +17,7 @@ var TOURNAMENT_PINNED = true;
 
 var SPELLING_BEE_SETS = {
     "2026-01-26": {
+        audio: true,
         cover: true,
         title: "January 26",
         date: "2026-01-26",
