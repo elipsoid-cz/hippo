@@ -1895,10 +1895,18 @@ async function _commitSave(newSetsData, newWordsJsRaw, idVal) {
         ], commitMsg);
 
         toast(`Set ${idVal} byl úspěšně uložen!`, 'success');
-        closeSetEditor();
 
-        // Reload data to get fresh SHAs
-        await loadAllData();
+        // Update local state immediately — no need to re-fetch from GitHub
+        setsData = newSetsData;
+        wordsJsRaw = newWordsJsRaw;
+        const newVer = extractVersion(newIndexRaw);
+        if (newVer) document.getElementById('header-version').textContent = `v${newVer}`;
+        renderSetsTable();
+        renderTournamentPinCard();
+        populateLbSelect();
+        runValidation();
+
+        closeSetEditor();
 
         // Auto-trigger cover + audio generation for new sets
         if (isNew) {
