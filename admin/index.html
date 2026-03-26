@@ -1060,6 +1060,9 @@ function serializeSets(sets) {
     for (const key of keys) {
         const s = sets[key];
         lines.push(`    "${key}": {`);
+        if (s.audio !== undefined) {
+            lines.push(`        audio: ${s.audio},`);
+        }
         if (s.cover !== undefined) {
             lines.push(`        cover: ${s.cover},`);
         }
@@ -1843,6 +1846,7 @@ async function saveSet() {
     // Build new set object — preserve cover flag when editing
     const existingSet = setsData[idVal] || {};
     const newSet = {
+        ...(existingSet.audio !== undefined ? { audio: existingSet.audio } : {}),
         ...(existingSet.cover !== undefined ? { cover: existingSet.cover } : {}),
         title,
         date: idVal,

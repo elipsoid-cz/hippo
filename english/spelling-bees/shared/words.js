@@ -17,6 +17,7 @@ var TOURNAMENT_PINNED = true;
 
 var SPELLING_BEE_SETS = {
     "2026-01-26": {
+        audio: true,
         cover: true,
         title: "January 26",
         date: "2026-01-26",
@@ -47,6 +48,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-02": {
+        audio: true,
         cover: true,
         title: "February 2",
         date: "2026-02-02",
@@ -77,6 +79,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-09": {
+        audio: true,
         cover: true,
         title: "February 9",
         date: "2026-02-09",
@@ -107,6 +110,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-16": {
+        audio: true,
         cover: true,
         title: "February 16",
         date: "2026-02-16",
@@ -137,6 +141,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-02-23": {
+        audio: true,
         cover: true,
         title: "February 23",
         date: "2026-02-23",
@@ -167,6 +172,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-09": {
+        audio: true,
         cover: true,
         title: "March 9",
         date: "2026-03-09",
@@ -197,6 +203,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-16": {
+        audio: true,
         cover: true,
         title: "March 16",
         date: "2026-03-16",
@@ -227,6 +234,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-03-23": {
+        audio: true,
         cover: true,
         title: "March 23",
         date: "2026-03-23",
