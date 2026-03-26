@@ -697,9 +697,10 @@ var SpellingBeeEngine = (function () {
     function preloadAudio() {
         if (!config.audioPath) return;
         audioCache = {};
+        var bust = '?v=' + Math.floor(Date.now() / 86400000); // daily cache bust
         config.words.forEach(function (word) {
             var filename = wordToAudioFilename(word);
-            var audio = new Audio(config.audioPath + filename);
+            var audio = new Audio(config.audioPath + filename + bust);
             audio.preload = 'auto';
             audioCache[filename] = audio;
         });
