@@ -1355,6 +1355,13 @@ function buildWordRows(set) {
         const idx = parseInt(row.querySelector('.word-en').dataset.idx, 10);
         checkSimilarity(idx);
     });
+
+    // Auto-generate missing translations if Gemini is available
+    const trans = set ? (set.translations || {}) : {};
+    const missingCount = (set ? (set.words || []) : []).filter(w => !trans[w.toLowerCase()]).length;
+    if (missingCount > 0 && geminiAvailable && geminiDailyUsed < geminiDailyLimit) {
+        setTimeout(generateTranslationsForGrid, 300);
+    }
 }
 
 function _appendWordRow(grid, word, tran) {
@@ -1628,10 +1635,16 @@ Respond ONLY with valid JSON:
 
         const result = JSON.parse(jsonText);
 
+        // Normalize translation keys to lowercase for lookup
+        const transLower = {};
+        for (const [k, v] of Object.entries(result.translations || {})) {
+            transLower[k.toLowerCase()] = v;
+        }
+
         // Fill translations into grid inputs
         let filled = 0;
         wordsToTranslate.forEach(({ row, word, trans }) => {
-            const t = result.translations?.[word.toLowerCase()];
+            const t = transLower[word.toLowerCase()];
             if (t) {
                 trans.value = t;
                 filled++;
