@@ -637,7 +637,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
         <div id="words-rows-section">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
                 <div class="section-title" style="margin-bottom:0;">Slova &amp; překlady</div>
-                <button class="btn btn-sm" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="addWordRow()">+ Přidat slovo</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-sm" id="gen-trans-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="generateTranslationsForGrid()" title="Vygenerovat chybějící překlady přes Gemini AI">✨ Překlady</button>
+                    <button class="btn btn-sm" style="background:var(--card2);color:var(--text);border:1px solid var(--border);" onclick="addWordRow()">+ Přidat slovo</button>
+                </div>
             </div>
 
             <div class="words-grid" id="words-grid">
@@ -728,6 +731,15 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
      TOAST CONTAINER
 ══════════════════════════════════════════════════ -->
 <div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════
+     AUDIO BACKGROUND STATUS BANNER
+══════════════════════════════════════════════════ -->
+<div id="audio-bg-status" style="display:none; position:fixed; bottom:5.5rem; left:50%; transform:translateX(-50%); z-index:9000; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:0.75rem 1.25rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); align-items:center; gap:0.75rem; font-size:0.9rem; min-width:280px; max-width:420px;">
+    <span id="audio-bg-icon" style="font-size:1.2rem;">🔊</span>
+    <span id="audio-bg-text" style="flex:1; color:var(--text-muted);"></span>
+    <a id="audio-bg-link" href="#" target="_blank" style="display:none; font-size:0.8rem; color:var(--accent); white-space:nowrap;"></a>
+</div>
 
 <!-- ══════════════════════════════════════════════════
      COVER BACKGROUND STATUS BANNER
@@ -1431,7 +1443,10 @@ function onDateChange() {
 //  Words textarea (nový set)
 // ══════════════════════════════════════════════════════════
 function parseWordsTextarea(text) {
-    return text.split(/[\s,]+/).map(w => w.trim()).filter(Boolean);
+    return text.split(/[\s,]+/)
+        .map(w => w.trim())
+        .filter(w => w && !/^\d+[).:]?$/.test(w))  // strip numbered list tokens like "1)", "2."
+        .map(w => w.replace(/\.$/, ''));             // strip trailing period (e.g. "Athletics.")
 }
 
 function onWordsTextareaInput() {
@@ -1556,6 +1571,86 @@ Respond ONLY with valid JSON:
     }
 }
 
+async function generateTranslationsForGrid() {
+    if (!geminiAvailable) { toast('Gemini API klíč není nastaven na serveru', 'warning'); return; }
+    if (geminiDailyUsed >= geminiDailyLimit) { toast(`Denní limit Gemini dosažen (${geminiDailyLimit})`, 'warning'); return; }
+
+    // Collect words without translations
+    const rows = Array.from(document.querySelectorAll('#words-grid .word-row'));
+    const wordsToTranslate = rows
+        .map(r => ({ row: r, word: r.querySelector('.word-en').value.trim(), trans: r.querySelector('.word-cs') }))
+        .filter(({ word, trans }) => word && !trans.value.trim());
+
+    if (wordsToTranslate.length === 0) { toast('Všechna slova již mají překlad', 'info'); return; }
+
+    const btn = document.getElementById('gen-trans-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;width:12px;height:12px;border-width:2px;display:inline-block;border-radius:50%;animation:spin 0.7s linear infinite;"></span>';
+
+    try {
+        const words = wordsToTranslate.map(x => x.word);
+        const prompt = `You are helping create a Czech spelling bee app for school children.
+
+Provide a Czech translation for each of these English words: ${words.join(', ')}
+
+CRITICAL RULES:
+- Translation must NOT reveal the English spelling
+- No cognates: designer→designér ❌ use návrhář ✅
+- No same-root words: fantastic→fantastický ❌ use úžasný ✅
+- Use real Czech equivalents or descriptive phrases
+
+Respond ONLY with valid JSON:
+{
+  "translations": {
+    "word1": "czech translation 1"
+  }
+}`;
+
+        const resp = await fetch(`${WORKER_URL}/gemini/generate`, {
+            method: 'POST',
+            headers: workerHeaders(),
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: 'application/json' }
+            })
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(`Gemini API: ${resp.status} ${err.error?.message || resp.statusText}`);
+        }
+
+        geminiDailyUsed++;
+
+        const data = await resp.json();
+        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!jsonText) throw new Error('Gemini nevrátil žádná data');
+
+        const result = JSON.parse(jsonText);
+
+        // Fill translations into grid inputs
+        let filled = 0;
+        wordsToTranslate.forEach(({ row, word, trans }) => {
+            const t = result.translations?.[word.toLowerCase()];
+            if (t) {
+                trans.value = t;
+                filled++;
+                const idx = row.querySelector('.word-en').dataset.idx;
+                if (idx !== undefined) checkSimilarity(parseInt(idx));
+            }
+        });
+
+        toast(`Překlady doplněny pro ${filled} slov`, 'success');
+
+    } catch (e) {
+        toast('Chyba při generování překladů: ' + e.message, 'error', 8000);
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Překlady';
+    }
+}
+
 function onWordInput(input, idx) {
     checkSimilarity(idx);
 }
@@ -1641,7 +1736,7 @@ function validateSetData(setId, newSet, allSets) {
     for (const word of words) {
         const key = word.toLowerCase();
         if (!trans[key]) {
-            issues.push({ type: 'error', text: `Slovo "${word}" nemá překlad` });
+            issues.push({ type: 'warn', text: `Slovo "${word}" nemá překlad` });
         } else if (translationTooSimilar(word, trans[key])) {
             const pct = Math.round(similarityScore(word, trans[key]) * 100);
             issues.push({ type: 'warn', text: `"${word}" → "${trans[key]}" — překlad příliš podobný anglickému slovu (${pct}% shoda)` });
@@ -1792,15 +1887,27 @@ async function _commitSave(newSetsData, newWordsJsRaw, idVal) {
         // Reload data to get fresh SHAs
         await loadAllData();
 
-        // Auto-trigger cover generation for new sets
+        // Auto-trigger cover + audio generation for new sets
         if (isNew) {
-            const dispatchedAt = Date.now();
+            const coverDispatchedAt = Date.now();
             try {
                 await _dispatchCoverWorkflow(idVal);
-                _startBgCoverPoll(idVal, dispatchedAt);
+                _startBgCoverPoll(idVal, coverDispatchedAt);
             } catch (e) {
                 toast('Cover workflow se nepodařilo spustit: ' + e.message, 'warning', 6000);
                 console.warn('Cover trigger error:', e);
+            }
+
+            // Small delay to avoid race on GitHub Actions API
+            await new Promise(r => setTimeout(r, 2000));
+
+            const audioDispatchedAt = Date.now();
+            try {
+                await _dispatchAudioWorkflow(idVal);
+                _startBgAudioPoll(idVal, audioDispatchedAt);
+            } catch (e) {
+                toast('Audio workflow se nepodařilo spustit: ' + e.message, 'warning', 6000);
+                console.warn('Audio trigger error:', e);
             }
         }
 
@@ -2130,6 +2237,50 @@ function _startBgCoverPoll(id, dispatchedAt) {
         },
         onAuthError() {
             _closeCoverBgBanner();
+        },
+    });
+}
+
+// ── Audio background banner ───────────────────────────────
+
+function _showAudioBgBanner(icon, text, linkText, linkHref, autoDismissMs) {
+    const banner = document.getElementById('audio-bg-status');
+    document.getElementById('audio-bg-icon').textContent = icon;
+    document.getElementById('audio-bg-text').textContent = text;
+    const linkEl = document.getElementById('audio-bg-link');
+    if (linkText && linkHref) {
+        linkEl.textContent = linkText;
+        linkEl.href = linkHref;
+        linkEl.style.display = 'inline';
+    } else {
+        linkEl.style.display = 'none';
+    }
+    banner.style.display = 'flex';
+    if (autoDismissMs) setTimeout(() => { banner.style.display = 'none'; }, autoDismissMs);
+}
+
+function _startBgAudioPoll(id, dispatchedAt) {
+    _showAudioBgBanner('🔄', `Generuji audio pro ${id}…`, null, null, null);
+
+    _pollAudioWorkflow(id, dispatchedAt, {
+        onStatus(status) {
+            if (status === 'in_progress')
+                _showAudioBgBanner('🔄', `Generuji audio pro ${id}…`, null, null, null);
+        },
+        onSuccess(runId) {
+            _showAudioBgBanner('✅', `Audio pro ${id} vygenerováno!`, 'GitHub', _ghRunUrl(runId), 10_000);
+            setsData[id] = setsData[id] || {};
+            setsData[id].audio = true;
+            renderSetsTable();
+        },
+        onFailure(runId, conclusion) {
+            _showAudioBgBanner('❌', `Audio pro ${id} selhalo (${conclusion}).`, 'Zobrazit log', _ghRunUrl(runId), null);
+        },
+        onTimeout() {
+            _showAudioBgBanner('⚠️', `Audio pro ${id}: zkontroluj GitHub Actions.`, 'Zobrazit', _ghAudioWorkflowUrl(), null);
+        },
+        onAuthError() {
+            document.getElementById('audio-bg-status').style.display = 'none';
         },
     });
 }
