@@ -1357,8 +1357,7 @@ function buildWordRows(set) {
     });
 
     // Auto-generate missing translations if Gemini is available
-    const trans = set ? (set.translations || {}) : {};
-    const missingCount = (set ? (set.words || []) : []).filter(w => !trans[w.toLowerCase()]).length;
+    const missingCount = words.filter(w => !trans[w.toLowerCase()]).length;
     if (missingCount > 0 && geminiAvailable && geminiDailyUsed < geminiDailyLimit) {
         setTimeout(generateTranslationsForGrid, 300);
     }
