@@ -497,6 +497,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
         </button>
 
         <div id="login-error" style="color: var(--danger); font-size:0.85rem; margin-top:0.75rem; display:none;"></div>
+        <div id="login-version" style="color:var(--text-muted); font-size:0.75rem; margin-top:1rem; text-align:center;"></div>
     </div>
 </div>
 
@@ -2933,6 +2934,15 @@ function fixValidationIssue(setId, word) {
         sessionStorage.removeItem('hippo_admin_jwt');
     }
 })();
+
+// Show version on login screen (public file, no auth needed)
+fetch('../index.html', { cache: 'no-store' })
+    .then(r => r.text())
+    .then(html => {
+        const m = html.match(/<small>v(\d+\.\d+\.\d+)<\/small>/);
+        if (m) document.getElementById('login-version').textContent = `v${m[1]}`;
+    })
+    .catch(() => {});
 </script>
 </body>
 </html>
