@@ -295,6 +295,35 @@ var SPELLING_BEE_SETS = {
             "athletics": "sportovní soutěže v běhu, skoku a hodu",
         },
     },
+    "2026-04-13": {
+        title: "April 13",
+        date: "2026-04-13",
+        description: "Medieval fantasy adventure stories",
+        words: [
+            "Playwright",
+            "Dramatic",
+            "Tragedy",
+            "Adventurous",
+            "Giant",
+            "Fantastical",
+            "Mistake",
+            "Village",
+            "Knight",
+            "Chivalry",
+        ],
+        translations: {
+            "playwright": "spisovatel divadelních her",
+            "dramatic": "působivý",
+            "tragedy": "neštěstí",
+            "adventurous": "odvážný",
+            "giant": "obr",
+            "fantastical": "pohádkový",
+            "mistake": "chyba",
+            "village": "vesnice",
+            "knight": "rytíř",
+            "chivalry": "rytířství",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
