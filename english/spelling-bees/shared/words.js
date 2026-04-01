@@ -296,6 +296,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-04-13": {
+        audio: true,
         title: "April 13",
         date: "2026-04-13",
         description: "Medieval fantasy adventure stories",
