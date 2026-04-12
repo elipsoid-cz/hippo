@@ -695,12 +695,14 @@ var SpellingBeeEngine = (function () {
     }
 
     function preloadAudio() {
-        if (!config.audioPath) return;
+        if (!config.audioPath && !config.audioPathMap) return;
         audioCache = {};
         var bust = '?v=' + Math.floor(Date.now() / 86400000); // daily cache bust
         config.words.forEach(function (word) {
+            var basePath = config.audioPath || (config.audioPathMap && config.audioPathMap[word]);
+            if (!basePath) return; // toto slovo nemá audio
             var filename = wordToAudioFilename(word);
-            var audio = new Audio(config.audioPath + filename + bust);
+            var audio = new Audio(basePath + filename + bust);
             audio.preload = 'auto';
             audioCache[filename] = audio;
         });
@@ -727,14 +729,15 @@ var SpellingBeeEngine = (function () {
         }
         window.speechSynthesis.cancel();
 
-        if (!config.audioPath) {
+        var basePath = config.audioPath || (config.audioPathMap && config.audioPathMap[text]);
+        if (!basePath) {
             speakViaTTS(text, slow);
             return;
         }
 
         // Pre-recorded WAV — pomalé přehrání přes playbackRate
         var filename = wordToAudioFilename(text);
-        var audio = audioCache[filename] || new Audio(config.audioPath + filename);
+        var audio = audioCache[filename] || new Audio(basePath + filename);
         currentAudio = audio;
         audio.currentTime = 0;
         audio.playbackRate = slow ? 0.65 : 1.0;

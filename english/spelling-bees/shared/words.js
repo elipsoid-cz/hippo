@@ -330,6 +330,23 @@ var SPELLING_BEE_SETS = {
 
 // Get all unique words across all sets (for tournament mode).
 // Deduplicates by lowercase comparison (e.g. "Should" appears in set1 and set2).
+function getTournamentAudioMap() {
+    var map = {};
+    for (var key in SPELLING_BEE_SETS) {
+        if (SPELLING_BEE_SETS.hasOwnProperty(key)) {
+            var set = SPELLING_BEE_SETS[key];
+            if (set.audio) {
+                set.words.forEach(function(w) {
+                    if (!map[w]) { // první set wins (dedup konzistentní s getAllSpellingBeeWords)
+                        map[w] = '../' + key + '/audio/';
+                    }
+                });
+            }
+        }
+    }
+    return map;
+}
+
 function getAllSpellingBeeWords() {
     var seen = {};
     var all = [];
