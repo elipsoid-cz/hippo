@@ -303,10 +303,12 @@ var SpellingBeeEngine = (function () {
                 date: originalDate
             }).then(function () {
                 if (callback) callback();
-            }).catch(function () {
+            }).catch(function (err) {
+                console.error("[Hippo] saveMasteryScore set failed:", err);
                 if (callback) callback();
             });
-        }).catch(function () {
+        }).catch(function (err) {
+            console.error("[Hippo] saveMasteryScore get failed:", err);
             docRef.set({
                 nickname: nickname.trim(),
                 masteredCount: computeMasteredCount(),
@@ -314,7 +316,8 @@ var SpellingBeeEngine = (function () {
                 date: new Date().toISOString()
             }).then(function () {
                 if (callback) callback();
-            }).catch(function () {
+            }).catch(function (err2) {
+                console.error("[Hippo] saveMasteryScore fallback set failed:", err2);
                 if (callback) callback();
             });
         });
