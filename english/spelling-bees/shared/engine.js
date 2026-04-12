@@ -1204,6 +1204,7 @@ var SpellingBeeEngine = (function () {
             dom.userInput.value = "";
             speak(state.currentWords[state.currentIndex], true);
             dom.userInput.focus();
+            updateScoreBar();
         }
     }
 
@@ -1277,13 +1278,18 @@ var SpellingBeeEngine = (function () {
     }
 
     function updateScoreBar() {
+        var mistakes = state.totalAttempts - state.score;
+        var pct = Math.round(state.score / state.currentWords.length * 100);
         var parts = [
             "Word: " +
                 (state.currentIndex + 1) +
                 " / " +
                 state.currentWords.length,
-            "Score: " + state.score,
+            "Score: " + pct + "%",
         ];
+        if (mistakes > 0) {
+            parts.push("\u274C " + mistakes);
+        }
         if (state.streak >= 2) {
             parts.push("\uD83D\uDD25 " + state.streak);
         }
