@@ -81,8 +81,9 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - **Tournament pin:** `var TOURNAMENT_PINNED = false/true` v `words.js` — pokud `true`, tournament karta se zobrazí jako první; přepíná se tlačítkem v admin záložce Sety
 
 ### Tournament Practice (`english/spelling-bees/tournament/`)
-- Procvičuje všechna slova ze všech setů (78+ slov), 10 per round
+- Procvičuje všechna slova ze všech setů (87+ slov), 10 per round
 - Config: `showProgress: true` — zapíná mastery systém (ostatní sety ho nemají)
+- **Audio:** `audioPathMap: getTournamentAudioMap()` — každé slovo se přehraje z pre-recorded WAV ze svého setu (`../YYYY-MM-DD/audio/`); slova bez audia fallbackují na TTS; `getTournamentAudioMap()` je definovaná v `words.js`
 - **Mastery systém:**
   - Seen words: `localStorage` klíč `hippo-seen-tournament` — slova označená jako viděná po prvním odehrání kola
   - Mastered = viděné AND bez chyby (odstraněno z mistakes po 3 správných za sebou)
@@ -183,11 +184,28 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - Hard refresh (Cmd+Shift+R) po nasazení pokud admin zobrazuje starý stav
 - ESC zavírá všechny modály (audio, cover, editor)
 
+## Firestore Security Rules
+
+Firestore rules jsou spravované **pouze ve Firebase Console** (nejsou v gitu). Při každé změně Firestore schématu je nutné rules zkontrolovat a případně aktualizovat.
+
+**Aktuální rules** povolují zápis ve dvou schématech:
+- Normální set: `{ nickname, score, total, ... }` — score a total musí být int v platném rozsahu
+- Tournament mastery: `{ nickname, masteredCount, totalWords, date }` — masteredCount musí být int ≥ 0
+
+**Post mortem (2026-04):** Tournament leaderboard neukladal žádné záznamy, protože `saveMasteryScore` ukládá jiná pole než rules vyžadovaly (`masteredCount` místo `score`/`total`). Chyba přežila dlouho, protože:
+1. `.catch()` v Firebase operacích tiše spolkl `PERMISSION_DENIED` bez jakéhokoliv logu
+2. `loadLeaderboard` vracel prázdné výsledky ze dvou důvodů naráz (prázdná kolekce + `orderBy` na neexistujícím poli), takže nebylo jasné, kde je problém
+
+**Pravidla do budoucna:**
+- Každý `.catch()` v Firebase operaci musí logovat chybu: `.catch(function(err) { console.error("[Hippo] ...", err); })`
+- Při přidání nového Firestore schématu (nová pole) vždy zkontrolovat, zda rules zápis povolují
+- `loadLeaderboard` nepoužívá `orderBy` na Firestore — řazení probíhá client-side (odolné vůči chybějícím polím)
+
 ## Placená API volání
 - **DŮLEŽITÉ:** Před každým voláním API, které stojí peníze (Gemini image generation, Firebase paid tier, apod.), se vždy zeptej uživatele a počkej na jeho souhlas. Nespouštěj taková volání automaticky.
 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — major.minor.patch
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
-- Aktuální verze: **v1.9.7**
+- Aktuální verze: **v1.10.6**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!
