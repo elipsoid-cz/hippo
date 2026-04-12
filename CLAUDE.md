@@ -151,6 +151,12 @@ Obecné pravidlo: pokud by žák mohl Czech překlad přečíst foneticky a odvo
 - Používá `GEMINI_API_KEY` z GitHub Secrets (neukládat nikam jinam!)
 - Výsledek: `english/spelling-bees/{setId}/cover.jpg` + `cover-thumb.jpg`, auto-commit
 
+## Hint systém (Spelling Bee)
+
+- **1. nápověda** (po 1. špatné odpovědi): políčka pro každé písmeno slova — první písmeno zelené a odhalené, zbytek šedé otazníky (`?`), mezery zachovány jako mezery. Žádný text "Starts with...".
+- **2. nápověda** (po 2. špatné odpovědi): letter-by-letter barevný feedback — zelené = správné, červené = špatné (porovnání se zadaným vstupem).
+- Implementace: `generateHint()` v `engine.js`; CSS třídy `hint-correct`, `hint-blank`, `hint-wrong`, `hint-space` ve `styles.css`.
+
 ## Audio systém (Spelling Bee)
 - **Technologie:** Gemini TTS API (`gemini-2.5-flash-preview-tts`) → raw PCM base64 → WAV (44-byte RIFF header, 24kHz/16bit/mono)
 - **Soubory:** `english/spelling-bees/{setId}/audio/{word}.wav` (slova s mezerami → pomlčka, apostrof a spec. znaky odstraněny)

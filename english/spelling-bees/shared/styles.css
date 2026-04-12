@@ -331,6 +331,12 @@ input:read-only {
     border: 2px solid var(--error);
 }
 
+.hint-blank {
+    background: #f5f5f5;
+    color: #bbb;
+    border: 2px solid #ccc;
+}
+
 .hint-space {
     width: 0.8em;
     border: none;

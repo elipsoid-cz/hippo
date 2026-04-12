@@ -776,17 +776,19 @@ var SpellingBeeEngine = (function () {
         var html = "";
 
         if (attemptNum === 1) {
-            // First wrong: show length and first letter
-            var len = correctWord.replace(/\s/g, "").length;
-            var first = correctWord.charAt(0).toUpperCase();
-            html +=
-                '<div class="hint-info">' +
-                "Starts with <strong>" +
-                first +
-                "</strong>, " +
-                len +
-                " letters (excluding spaces)" +
-                "</div>";
+            // First wrong: show length, first letter, and blank letter blocks
+            // Show letter blocks: first letter revealed, rest with question mark, spaces preserved
+            html += '<div class="hint-container">';
+            for (var ci = 0; ci < correctWord.length; ci++) {
+                if (correctWord[ci] === " ") {
+                    html += '<span class="hint-letter hint-space"></span>';
+                } else if (ci === 0) {
+                    html += '<span class="hint-letter hint-correct">' + correctWord[0].toUpperCase() + '</span>';
+                } else {
+                    html += '<span class="hint-letter hint-blank">?</span>';
+                }
+            }
+            html += "</div>";
         } else {
             // Second wrong: letter-by-letter colored feedback
             html += generateLetterFeedback(correctWord, userInput);
