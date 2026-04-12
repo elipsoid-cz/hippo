@@ -322,11 +322,9 @@ var SpellingBeeEngine = (function () {
 
     function loadLeaderboard(callback) {
         if (!db) { callback([]); return; }
-        var orderField = config.showProgress ? "masteredCount" : "score";
         db.collection("leaderboards").doc(config.setId)
             .collection("scores")
-            .orderBy(orderField, "desc")
-            .limit(30)
+            .limit(100)
             .get()
             .then(function (snapshot) {
                 var entries = [];
@@ -386,6 +384,22 @@ var SpellingBeeEngine = (function () {
             dom.finalScreen.insertBefore(panel, dom.playAgainBtn);
         } else {
             dom.finalScreen.appendChild(panel);
+        }
+
+        // Show existing leaderboard below the save panel so first-time players
+        // can see who's already on the board (important for tournament mode)
+        if (config.showProgress) {
+            loadLeaderboard(function (entries) {
+                var existing = panel.nextSibling && panel.nextSibling.classList &&
+                    panel.nextSibling.classList.contains("leaderboard-container")
+                    ? panel.nextSibling : null;
+                if (existing) existing.remove();
+                if (entries.length > 0) {
+                    var lbEl = buildLeaderboardElement(entries, loadNickname());
+                    lbEl.classList.add("is-loaded");
+                    panel.after ? panel.after(lbEl) : panel.parentNode.insertBefore(lbEl, panel.nextSibling);
+                }
+            });
         }
 
         var input = document.getElementById("nickname-input");
