@@ -25,6 +25,9 @@ Temporary Items
 # Environment / secrets
 .env
 
+# Brainstorming mockups (visual companion)
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
