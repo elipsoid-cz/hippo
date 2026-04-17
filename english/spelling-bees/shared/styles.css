@@ -740,3 +740,73 @@ input:read-only {
     color: #7f8c8d;
     margin: 4px 0 0.8rem 0;
 }
+
+/* --- Word Preview --- */
+#header-desc {
+    cursor: default;
+}
+
+#header-desc.word-list-toggle {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+#header-desc.word-list-toggle::after {
+    content: "▶";
+    font-size: 0.75em;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+#header-desc.word-list-toggle.expanded::after {
+    transform: rotate(90deg);
+}
+
+.word-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.6rem;
+    padding: 0.75rem 0 0.5rem;
+    width: 100%;
+}
+
+.word-cards-grid.hidden {
+    display: none;
+}
+
+.word-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.word-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.word-card:active {
+    transform: translateY(0);
+}
+
+.word-card-en {
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #222;
+}
+
+.word-card-cs {
+    font-size: 0.8rem;
+    color: #888;
+}
