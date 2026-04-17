@@ -1445,6 +1445,8 @@ var SpellingBeeEngine = (function () {
         if (dom.headerIcon && !config.cover) dom.headerIcon.textContent = config.icon;
         if (dom.headerTitle) dom.headerTitle.textContent = config.title;
         if (dom.headerDesc) {
+            // Note: textContent preserves CSS classes (word-list-toggle, expanded).
+            // initWordList() runs once (guarded by dataset.wordListInit) and must NOT be re-called here.
             dom.headerDesc.textContent = config.description;
         }
 
