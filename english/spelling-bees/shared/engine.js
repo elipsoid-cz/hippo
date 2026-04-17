@@ -62,6 +62,7 @@ var SpellingBeeEngine = (function () {
         dom.mistakesGroup = document.getElementById("mistakes-group");
         dom.leaderboardZone = document.getElementById("leaderboard-zone");
         dom.setCover = document.getElementById("set-cover");
+        dom.backLink = document.getElementById("back-link");
 
         // Create translation display element if not already in HTML
         dom.translationDisplay = document.getElementById("translation-display");
@@ -1071,6 +1072,31 @@ var SpellingBeeEngine = (function () {
     }
 
     // =====================
+    // Back Link
+    // =====================
+
+    function updateBackLink(deep) {
+        if (!dom.backLink) return;
+        if (deep) {
+            dom.backLink.textContent = '\u2190 Back to set';
+            dom.backLink.removeAttribute('href');
+            dom.backLink.onclick = function (e) {
+                e.preventDefault();
+                hide(dom.gameZone);
+                hide(dom.finalScreen);
+                show(dom.welcomeScreen);
+                setupWelcomeScreen();
+                showWelcomeLeaderboard();
+                updateBackLink(false);
+            };
+        } else {
+            dom.backLink.textContent = '\u2190 Home';
+            dom.backLink.href = '../../../';
+            dom.backLink.onclick = null;
+        }
+    }
+
+    // =====================
     // Game Flow
     // =====================
 
@@ -1091,6 +1117,7 @@ var SpellingBeeEngine = (function () {
         hide(dom.welcomeScreen);
         hide(dom.finalScreen);
         show(dom.gameZone);
+        updateBackLink(true);
         loadWord();
     }
 
@@ -1224,6 +1251,7 @@ var SpellingBeeEngine = (function () {
     function showFinal() {
         hide(dom.gameZone);
         show(dom.finalScreen);
+        updateBackLink(true);
         var scorePct = state.currentWords.length > 0
             ? Math.round(state.score / state.currentWords.length * 100)
             : 0;
@@ -1464,6 +1492,7 @@ var SpellingBeeEngine = (function () {
                 show(dom.welcomeScreen);
                 setupWelcomeScreen();
                 showWelcomeLeaderboard();
+                updateBackLink(false);
             });
         }
 
