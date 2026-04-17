@@ -63,6 +63,7 @@ var SpellingBeeEngine = (function () {
         dom.leaderboardZone = document.getElementById("leaderboard-zone");
         dom.setCover = document.getElementById("set-cover");
         dom.backLink = document.getElementById("back-link");
+        dom.wordCardsGrid = document.getElementById("word-cards-grid");
 
         // Create translation display element if not already in HTML
         dom.translationDisplay = document.getElementById("translation-display");
@@ -1377,6 +1378,57 @@ var SpellingBeeEngine = (function () {
         return el;
     }
 
+    function renderWordCards() {
+        if (!dom.wordCardsGrid) return;
+        dom.wordCardsGrid.innerHTML = "";
+        config.words.forEach(function (word) {
+            var translation = config.translations[word.toLowerCase()];
+            var card = document.createElement("div");
+            card.className = "word-card";
+            var enEl = document.createElement("div");
+            enEl.className = "word-card-en";
+            enEl.textContent = word;
+            var csEl = document.createElement("div");
+            csEl.className = "word-card-cs";
+            csEl.textContent = translation || "";
+            card.appendChild(enEl);
+            card.appendChild(csEl);
+            card.addEventListener("click", function () {
+                speak(word, false);
+            });
+            dom.wordCardsGrid.appendChild(card);
+        });
+    }
+
+    function initWordList() {
+        if (!dom.wordCardsGrid || !dom.headerDesc) return;
+        if (!config.translations || Object.keys(config.translations).length === 0) return;
+
+        renderWordCards();
+
+        var seenKey = "hippo-wordlist-seen-" + config.setId;
+        var alreadySeen = localStorage.getItem(seenKey);
+
+        if (!alreadySeen) {
+            dom.wordCardsGrid.classList.remove("hidden");
+            dom.headerDesc.classList.add("expanded");
+            localStorage.setItem(seenKey, "1");
+        }
+
+        dom.headerDesc.classList.add("word-list-toggle");
+
+        dom.headerDesc.addEventListener("click", function () {
+            var isExpanded = !dom.wordCardsGrid.classList.contains("hidden");
+            if (isExpanded) {
+                dom.wordCardsGrid.classList.add("hidden");
+                dom.headerDesc.classList.remove("expanded");
+            } else {
+                dom.wordCardsGrid.classList.remove("hidden");
+                dom.headerDesc.classList.add("expanded");
+            }
+        });
+    }
+
     function setupWelcomeScreen() {
         if (dom.setCover) {
             if (config.cover) {
@@ -1391,9 +1443,7 @@ var SpellingBeeEngine = (function () {
         if (dom.headerIcon && !config.cover) dom.headerIcon.textContent = config.icon;
         if (dom.headerTitle) dom.headerTitle.textContent = config.title;
         if (dom.headerDesc) {
-            dom.headerDesc.textContent = config.wordsPerRound > 0
-                ? config.description
-                : config.description + " (" + config.words.length + " words)";
+            dom.headerDesc.textContent = config.description;
         }
 
         var mistakeWords = getMistakeWords();
@@ -1405,7 +1455,7 @@ var SpellingBeeEngine = (function () {
                 } else {
                     dom.startAllBtn.textContent = config.wordsPerRound > 0
                         ? "All Words (" + config.wordsPerRound + " per round)"
-                        : "All Words (" + config.words.length + ")";
+                        : "Zač\u00edt";
                 }
             }
             if (dom.startMistakesBtn) {
@@ -1429,7 +1479,7 @@ var SpellingBeeEngine = (function () {
                 } else {
                     dom.startAllBtn.textContent = config.wordsPerRound > 0
                         ? "START (" + config.wordsPerRound + " words)"
-                        : "START";
+                        : "Zač\u00edt";
                 }
             }
             if (dom.mistakesGroup) hide(dom.mistakesGroup);
@@ -1526,6 +1576,7 @@ var SpellingBeeEngine = (function () {
                 window.speechSynthesis.onvoiceschanged = initVoices;
             }
             setupWelcomeScreen();
+            initWordList();
             bindEvents();
             // Load Firebase SDK in background for leaderboard
             loadFirebaseSDK(function () {
