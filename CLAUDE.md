@@ -1,13 +1,20 @@
 # Claude Instructions for Hippo Project
 
 ## Project Overview
-Hippo 🦛 is an interactive web application for English language learning with practice exercises.
+Hippo 🦛 is an interactive web application for learning — English language exercises and math games.
 
 ## Project Structure
-- `index.html` - Main landing page with links to all exercises
+- `index.html` - Main landing page (HippoBee — English exercises only, nezasahuj sem kvůli math)
 - `english/spelling-bees/` - Spelling practice exercises with audio
 - `english/grammar/` - Grammar exercises (irregular verbs, comparatives)
 - `admin/index.html` - Admin rozhraní pro správu spelling bee setů
+- `math/index.html` - Math hub (vstupní stránka pro matematické hry, přístupná přes `/math/`)
+- `math/multiply/index.html` - Math Blaster — retro arcade násobilka
+
+## Sekce jsou oddělené
+- **English sekce** (`index.html`, `english/`) a **Math sekce** (`math/`) jsou záměrně oddělené
+- Math hub je dostupný přes `/math/`, anglická homepage se nemění
+- Verze v `index.html` se bumkuje až při integraci math sekce do anglické homepage
 
 ## Technology Stack
 - HTML5
@@ -215,3 +222,15 @@ Firestore rules jsou spravované **pouze ve Firebase Console** (nejsou v gitu). 
 - Zvyšuj při každém commitu: patch = bugfix, minor = nová feature/refaktoring, major = zásadní změna
 - Aktuální verze: **v1.10.6**
 - **DŮLEŽITÉ:** Vždy aktualizuj verzi v `index.html` jako součást každého commitu — nikdy necommituj bez zvýšení verze!
+- **Výjimka:** Commity čistě do `math/` sekce verzi nebumpují (math je zatím oddělená, nezobrazuje se na homepage)
+
+## Math Blaster (`math/multiply/index.html`)
+- **Technologie:** Vanilla JS, HTML5, CSS3, Firebase Firestore, localStorage — vše v jednom souboru
+- **Firebase kolekce:** `leaderboards/math-multiply/scores/{nicknameKey}`
+- **Schéma dokumentu:** `{ nickname, score, level, date }` — score desc → date asc
+- **localStorage klíče:** `mathblaster-xp`, `mathblaster-level`, `mathblaster-badges`, `mathblaster-nickname`
+- **Herní flow:** Welcome → Kolo (10 příkladů, 6s timer) → Boss fight (5 příkladů, 4s timer, 6–9×6–9) → Výsledky
+- **Boss fight:** těžší příklady (6–9 × 6–9), pulzující červené pozadí (`boss-bg` třída na `body`), 2× body
+- **Gamifikace:** 3 životy, combo ×2/×3, XP, levely 1–10, 6 odznaků
+- **Konfigurace:** konstanty `TIMER_NORMAL`, `TIMER_BOSS`, `ROUND_SIZE`, `BOSS_SIZE`, `COMBO_2X`, `COMBO_3X` na začátku `<script>` tagu
+- **Firestore rules:** Math Blaster schéma přidáno do existujících rules (score + level, bez `total`)
