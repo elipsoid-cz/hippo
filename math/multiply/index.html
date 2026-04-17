@@ -9,6 +9,7 @@
 
     body {
       background: #0d0d1a;
+      transition: background 0.4s;
       color: #fff;
       font-family: 'Courier New', Courier, monospace;
       min-height: 100vh;
@@ -175,6 +176,10 @@
     @keyframes boss-pulse {
       from { box-shadow: 0 0 10px #ff444433; }
       to { box-shadow: 0 0 30px #ff444466; }
+    }
+
+    body.boss-bg {
+      background: #1a0505;
     }
 
     .question-text {
@@ -584,10 +589,13 @@ function comboMultiplier(streak) {
 // ══════════════════════════
 
 function randomPair() {
+  // V boss módu jen těžké příklady: 6–9 × 6–9
+  var min = state.isBoss ? 6 : 2;
+  var range = state.isBoss ? 4 : 8; // 6-9 nebo 2-9
   var attempts = 0;
   while (attempts < 200) {
-    var a = Math.floor(Math.random() * 8) + 2;
-    var b = Math.floor(Math.random() * 8) + 2;
+    var a = Math.floor(Math.random() * range) + min;
+    var b = Math.floor(Math.random() * range) + min;
     var key = a + 'x' + b;
     var keyRev = b + 'x' + a;
     if (state.usedPairs.indexOf(key) === -1 && state.usedPairs.indexOf(keyRev) === -1) {
@@ -597,8 +605,8 @@ function randomPair() {
     attempts++;
   }
   state.usedPairs = [];
-  var a = Math.floor(Math.random() * 8) + 2;
-  var b = Math.floor(Math.random() * 8) + 2;
+  var a = Math.floor(Math.random() * range) + min;
+  var b = Math.floor(Math.random() * range) + min;
   state.usedPairs.push(a + 'x' + b);
   return [a, b];
 }
@@ -886,6 +894,7 @@ function startGame() {
   saveNickname(nick);
   resetState();
   dom.questionPanel.classList.remove('boss-mode');
+  document.body.classList.remove('boss-bg');
   showScreen('game');
   updateHUD();
   renderQuestion();
@@ -910,6 +919,7 @@ function endRound() {
   state.roundWrong = 0;
   state.fastAnswers = 0;
   dom.questionPanel.classList.add('boss-mode');
+  document.body.classList.add('boss-bg');
   renderQuestion();
 }
 
@@ -1011,6 +1021,7 @@ document.getElementById('nickname-input').addEventListener('keydown', function(e
 document.getElementById('btn-play-again').onclick = function() {
   resetState();
   dom.questionPanel.classList.remove('boss-mode');
+  document.body.classList.remove('boss-bg');
   showScreen('game');
   updateHUD();
   renderQuestion();
