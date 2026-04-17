@@ -1118,6 +1118,7 @@ var SpellingBeeEngine = (function () {
     }
 
     function checkWord() {
+        if (dom.userInput.readOnly) return;
         var input = normalize(dom.userInput.value);
         var correct = normalize(state.currentWords[state.currentIndex]);
         if (input === "") return;
