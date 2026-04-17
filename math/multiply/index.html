@@ -640,6 +640,223 @@ function generateQuestion() {
   var options = generateDistractors(a, b);
   return { a: a, b: b, correct: a * b, options: options };
 }
+
+// ══════════════════════════
+//  DOM REFERENCE
+// ══════════════════════════
+var dom = {
+  screens: {
+    welcome:  document.getElementById('screen-welcome'),
+    game:     document.getElementById('screen-game'),
+    result:   document.getElementById('screen-result'),
+    gameover: document.getElementById('screen-gameover'),
+  },
+  livesDisplay:    document.getElementById('lives-display'),
+  streakDisplay:   document.getElementById('streak-display'),
+  levelDisplay:    document.getElementById('level-display'),
+  timerBar:        document.getElementById('timer-bar'),
+  questionPanel:   document.getElementById('question-panel'),
+  questionText:    document.getElementById('question-text'),
+  answerGrid:      document.getElementById('answer-grid'),
+  scoreDisplay:    document.getElementById('score-display'),
+  comboDisplay:    document.getElementById('combo-display'),
+  flash:           document.getElementById('flash'),
+};
+
+// ══════════════════════════
+//  SCREEN MANAGEMENT
+// ══════════════════════════
+function showScreen(name) {
+  Object.keys(dom.screens).forEach(function(k) {
+    dom.screens[k].classList.remove('active');
+  });
+  dom.screens[name].classList.add('active');
+}
+
+// ══════════════════════════
+//  FLASH ANIMACE
+// ══════════════════════════
+function flashScreen(color) {
+  dom.flash.className = 'flash ' + color;
+  dom.flash.classList.add('show');
+  setTimeout(function() { dom.flash.classList.remove('show'); }, 250);
+}
+
+function showScorePop(value, correct) {
+  var el = document.createElement('div');
+  el.className = 'score-pop';
+  el.textContent = (correct ? '+' : '') + value;
+  el.style.color = correct ? '#00ff88' : '#ff4444';
+  el.style.left = '50%';
+  el.style.top = '45%';
+  el.style.transform = 'translate(-50%, -50%)';
+  document.body.appendChild(el);
+  requestAnimationFrame(function() {
+    el.style.opacity = '1';
+    el.style.transform = 'translate(-50%, -80%)';
+    setTimeout(function() {
+      el.style.opacity = '0';
+      setTimeout(function() { el.remove(); }, 200);
+    }, 500);
+  });
+}
+
+// ══════════════════════════
+//  TIMER
+// ══════════════════════════
+var timerInterval = null;
+var timerRemaining = 0;
+var timerTotal = 0;
+var questionStartTime = 0;
+
+function startTimer(seconds) {
+  clearInterval(timerInterval);
+  timerRemaining = seconds;
+  timerTotal = seconds;
+  questionStartTime = Date.now();
+  updateTimerBar();
+  timerInterval = setInterval(function() {
+    timerRemaining -= 0.1;
+    if (timerRemaining <= 0) {
+      timerRemaining = 0;
+      updateTimerBar();
+      clearInterval(timerInterval);
+      handleAnswer(null);
+    } else {
+      updateTimerBar();
+    }
+  }, 100);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+function updateTimerBar() {
+  var pct = Math.max(0, timerRemaining / timerTotal) * 100;
+  dom.timerBar.style.width = pct + '%';
+  if (pct > 60) {
+    dom.timerBar.style.background = 'linear-gradient(90deg, #00ff88, #00ffaa)';
+  } else if (pct > 30) {
+    dom.timerBar.style.background = 'linear-gradient(90deg, #ffff00, #ffaa00)';
+  } else {
+    dom.timerBar.style.background = 'linear-gradient(90deg, #ff4444, #ff6600)';
+  }
+}
+
+// ══════════════════════════
+//  AKTUÁLNÍ OTÁZKA
+// ══════════════════════════
+var currentQuestion = null;
+
+function renderQuestion() {
+  currentQuestion = generateQuestion();
+  dom.questionText.textContent = currentQuestion.a + ' × ' + currentQuestion.b + ' = ?';
+
+  dom.answerGrid.innerHTML = '';
+  var colors = ['color-0', 'color-1', 'color-2', 'color-3'];
+  currentQuestion.options.forEach(function(opt, i) {
+    var btn = document.createElement('button');
+    btn.className = 'answer-btn ' + colors[i];
+    btn.textContent = opt;
+    btn.onclick = function() { handleAnswer(opt); };
+    dom.answerGrid.appendChild(btn);
+  });
+
+  var timerSeconds = state.isBoss ? TIMER_BOSS : TIMER_NORMAL;
+  startTimer(timerSeconds);
+}
+
+function updateHUD() {
+  var heartsArr = [];
+  for (var i = 0; i < 3; i++) {
+    heartsArr.push(i < state.lives ? '❤️' : '🖤');
+  }
+  dom.livesDisplay.textContent = heartsArr.join('');
+
+  if (state.streak >= COMBO_2X) {
+    var mult = comboMultiplier(state.streak);
+    dom.streakDisplay.textContent = '🔥 SÉRIE ×' + state.streak + ' [×' + mult + ' COMBO]';
+  } else if (state.streak > 0) {
+    dom.streakDisplay.textContent = '🔥 SÉRIE ×' + state.streak;
+  } else {
+    dom.streakDisplay.textContent = '';
+  }
+
+  var progress = loadProgress();
+  dom.levelDisplay.textContent = 'LVL ' + progress.level;
+  dom.scoreDisplay.textContent = state.score;
+
+  var mult2 = comboMultiplier(state.streak);
+  dom.comboDisplay.textContent = mult2 > 1 ? '×' + mult2 + ' COMBO BONUS' : '';
+}
+
+// ══════════════════════════
+//  HANDLE ANSWER
+// ══════════════════════════
+function handleAnswer(chosen) {
+  stopTimer();
+
+  var elapsed = (Date.now() - questionStartTime) / 1000;
+  var isCorrect = chosen !== null && chosen === currentQuestion.correct;
+  var buttons = dom.answerGrid.querySelectorAll('.answer-btn');
+
+  buttons.forEach(function(btn) {
+    btn.disabled = true;
+    if (parseInt(btn.textContent) === currentQuestion.correct) {
+      btn.classList.add('correct');
+    } else if (parseInt(btn.textContent) === chosen) {
+      btn.classList.add('wrong');
+    }
+  });
+
+  if (isCorrect) {
+    var mult = comboMultiplier(state.streak) * (state.isBoss ? BOSS_MULTIPLIER : 1);
+    var points = 10 * mult;
+    var fast = elapsed < 2 ? FAST_BONUS : 0;
+    var total = points + fast;
+
+    state.score += total;
+    state.streak++;
+    state.maxStreak = Math.max(state.maxStreak, state.streak);
+    state.correct++;
+    state.xpBase += 10;
+    if (fast) state.xpBase += FAST_BONUS;
+    if (state.isBoss) state.xpBoss += points;
+    else if (mult > 1) state.xpCombo += (mult - 1) * 10;
+    if (elapsed < 2) state.fastAnswers++;
+
+    flashScreen('green');
+    showScorePop('+' + total, true);
+  } else {
+    state.lives--;
+    state.streak = 0;
+    state.wrong++;
+    state.roundWrong++;
+    flashScreen('red');
+    showScorePop('-1 ❤️', false);
+  }
+
+  updateHUD();
+
+  setTimeout(function() {
+    if (state.lives <= 0) {
+      gameOver();
+      return;
+    }
+    state.questionIndex++;
+    var roundSize = state.isBoss ? BOSS_SIZE : ROUND_SIZE;
+    if (state.questionIndex >= roundSize) {
+      if (state.isBoss) {
+        endBoss();
+      } else {
+        endRound();
+      }
+    } else {
+      renderQuestion();
+    }
+  }, 600);
+}
   </script>
 </body>
 </html>
