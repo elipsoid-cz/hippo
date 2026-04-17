@@ -776,17 +776,22 @@ var SpellingBeeEngine = (function () {
         var html = "";
 
         if (attemptNum === 1) {
-            // First wrong: show length, first letter, and blank letter blocks
-            // Show letter blocks: first letter revealed, rest with question mark, spaces preserved
+            // First wrong: show length, first letter of each word, and blank letter blocks
             html += '<div class="hint-container">';
-            for (var ci = 0; ci < correctWord.length; ci++) {
-                if (correctWord[ci] === " ") {
-                    html += '<span class="hint-letter hint-space"></span>';
-                } else if (ci === 0) {
-                    html += '<span class="hint-letter hint-correct">' + correctWord[0].toUpperCase() + '</span>';
-                } else {
-                    html += '<span class="hint-letter hint-blank">?</span>';
+            var words = correctWord.split(" ");
+            for (var wi = 0; wi < words.length; wi++) {
+                if (wi > 0) {
+                    html += '<span class="hint-word-gap"></span>';
                 }
+                html += '<span class="hint-word">';
+                for (var ci = 0; ci < words[wi].length; ci++) {
+                    if (ci === 0) {
+                        html += '<span class="hint-letter hint-correct">' + words[wi][0].toUpperCase() + '</span>';
+                    } else {
+                        html += '<span class="hint-letter hint-blank">?</span>';
+                    }
+                }
+                html += '</span>';
             }
             html += "</div>";
         } else {

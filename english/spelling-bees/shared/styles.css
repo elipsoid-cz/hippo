@@ -337,6 +337,16 @@ input:read-only {
     border: 2px solid #ccc;
 }
 
+.hint-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.hint-word-gap {
+    display: inline-block;
+    width: 0.8em;
+}
+
 .hint-space {
     width: 0.8em;
     border: none;
