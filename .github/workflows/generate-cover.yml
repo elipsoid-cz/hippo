@@ -32,6 +32,12 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
+      - name: Pull latest changes before commit
+        run: |
+          git stash || true
+          git pull --rebase origin main
+          git stash pop || true
+
       - name: Commit and push cover images
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

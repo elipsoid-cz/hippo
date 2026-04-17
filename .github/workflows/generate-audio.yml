@@ -7,6 +7,11 @@ on:
         description: 'Set ID (YYYY-MM-DD)'
         required: true
         type: string
+      word:
+        description: 'Jedno slovo k přegenerování (prázdné = celý set)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   generate:
@@ -22,8 +27,15 @@ jobs:
           node-version: '20'
 
       - name: Generate audio
-        run: node scripts/generate-audio.js --set "${{ inputs.set_id }}" --voice Puck
+        run: |
+          if [ -n "$WORD" ]; then
+            node scripts/generate-audio.js --set "$SET_ID" --word "$WORD" --force --voice Puck
+          else
+            node scripts/generate-audio.js --set "$SET_ID" --voice Puck
+          fi
         env:
+          SET_ID: ${{ inputs.set_id }}
+          WORD: ${{ inputs.word }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Pull latest changes before commit

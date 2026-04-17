@@ -122,17 +122,23 @@ function markAudioInWordsJs(setId) {
 }
 
 // --- Generování audia pro jeden set -----------------------------------------
-async function generateAudioForSet(setId, set, apiKey, force, voice) {
+async function generateAudioForSet(setId, set, apiKey, force, voice, wordFilter) {
     const audioDir = path.join(SETS_DIR, setId, 'audio');
     if (!fs.existsSync(audioDir)) {
         fs.mkdirSync(audioDir, { recursive: true });
     }
 
-    console.log(`\n[${setId}] ${set.title} (${set.words.length} slov, hlas: ${voice})`);
+    const wordsToProcess = wordFilter ? set.words.filter(w => w === wordFilter) : set.words;
+    if (wordFilter && wordsToProcess.length === 0) {
+        console.error(`Chyba: Slovo "${wordFilter}" nenalezeno v setu "${setId}"`);
+        process.exit(1);
+    }
+
+    console.log(`\n[${setId}] ${set.title} (${wordsToProcess.length} slov, hlas: ${voice})`);
 
     let ok = 0;
-    for (let i = 0; i < set.words.length; i++) {
-        const word     = set.words[i];
+    for (let i = 0; i < wordsToProcess.length; i++) {
+        const word     = wordsToProcess[i];
         const filename = wordToFilename(word);
         const outPath  = path.join(audioDir, filename);
 
@@ -164,19 +170,19 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
         if (generated) ok++;
 
         // Rate limiting: gemini-2.5-flash-tts free tier = 3 RPM → min 21 s mezi požadavky
-        if (i < set.words.length - 1) {
+        if (i < wordsToProcess.length - 1) {
             await new Promise(r => setTimeout(r, 21000));
         }
     }
 
-    const failed = set.words.filter(w => !fs.existsSync(path.join(audioDir, wordToFilename(w))));
+    const failed = wordsToProcess.filter(w => !fs.existsSync(path.join(audioDir, wordToFilename(w))));
     if (failed.length > 0) {
         console.error(`  ✗  Selhala slova: ${failed.join(', ')}`);
         process.exitCode = 1;
     }
     if (ok > 0) {
         markAudioInWordsJs(setId);
-        console.log(`  words.js: audio: true přidáno (${ok}/${set.words.length} slov)`);
+        console.log(`  words.js: audio: true přidáno (${ok}/${wordsToProcess.length} slov)`);
     } else {
         console.warn(`  Žádné soubory nebyly vygenerovány, words.js nezměněn.`);
     }
@@ -186,11 +192,12 @@ async function generateAudioForSet(setId, set, apiKey, force, voice) {
 
 // --- Hlavní logika ----------------------------------------------------------
 async function main() {
-    const args   = process.argv.slice(2);
-    const setArg = args.includes('--set') ? args[args.indexOf('--set') + 1] : null;
-    const doAll  = args.includes('--all');
-    const force  = args.includes('--force');
-    const voice  = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : 'Aoede';
+    const args     = process.argv.slice(2);
+    const setArg   = args.includes('--set')   ? args[args.indexOf('--set')   + 1] : null;
+    const wordArg  = args.includes('--word')  ? args[args.indexOf('--word')  + 1] : null;
+    const doAll    = args.includes('--all');
+    const force    = args.includes('--force') || !!wordArg;
+    const voice    = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : 'Aoede';
 
     const sets = loadSets();
 
@@ -219,7 +226,7 @@ async function main() {
     let totalWords = 0;
     for (let i = 0; i < targets.length; i++) {
         const [setId, set] = targets[i];
-        const ok = await generateAudioForSet(setId, set, API_KEY, force, voice);
+        const ok = await generateAudioForSet(setId, set, API_KEY, force, voice, wordArg);
         totalOk    += ok;
         totalWords += set.words.length;
 

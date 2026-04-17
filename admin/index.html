@@ -2366,14 +2366,19 @@ async function _renderAudioWordList(id, headerHtml) {
         return;
     }
 
+    const regenBtn = (w) =>
+        `<button onclick="_regenerateSingleWord(${JSON.stringify(id).replace(/"/g,'&quot;')},${JSON.stringify(w).replace(/"/g,'&quot;')})" title="Přegenerovat audio" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0.1rem 0.3rem;opacity:0.55;transition:opacity 0.15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.55">🔄</button>`;
+
     const rows = words.map(w => exists[w]
         ? `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);">
                <button onclick="_playAdminWord(${JSON.stringify(id).replace(/"/g,'&quot;')},${JSON.stringify(w).replace(/"/g,'&quot;')})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.1rem 0.3rem;">▶️</button>
-               <span style="font-size:0.95rem;">${escHtml(w)}</span>
+               <span style="flex:1;font-size:0.95rem;">${escHtml(w)}</span>
+               ${regenBtn(w)}
            </div>`
-        : `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);opacity:0.45;">
-               <span style="font-size:1.1rem;padding:0.1rem 0.3rem;user-select:none;">—</span>
-               <span style="font-size:0.95rem;">${escHtml(w)}</span>
+        : `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--border);">
+               <span style="font-size:1.1rem;padding:0.1rem 0.3rem;user-select:none;opacity:0.35;">—</span>
+               <span style="flex:1;font-size:0.95rem;opacity:0.5;">${escHtml(w)}</span>
+               ${regenBtn(w)}
            </div>`
     ).join('');
 
@@ -2580,6 +2585,68 @@ async function doTriggerAudio() {
             btn.textContent = '🔊 Zkusit znovu';
             _showAudioModalStatus('❌', `Generování selhalo (${conclusion}).`,
                 `${link} &nbsp;·&nbsp; <a href="#" style="color:inherit;text-decoration:underline;" onclick="event.preventDefault();_renderAudioWordList('${escHtml(id)}')">📋 Zobrazit slova</a>`);
+        },
+        onTimeout() {
+            _showAudioModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
+                `<a href="${_ghAudioWorkflowUrl()}" target="_blank">Zkontroluj Actions na GitHubu</a>`);
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat znovu';
+        },
+        onAuthError() {
+            _showAudioModalStatus('🔒', 'Relace vypršela — přihlaš se znovu.');
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat audio';
+        },
+    });
+}
+
+async function _regenerateSingleWord(setId, word) {
+    const btn = document.getElementById('audio-generate-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generuji…';
+
+    const dispatchedAt = Date.now();
+    try {
+        const resp = await fetch(
+            `${WORKER_URL}/github/repos/${REPO}/actions/workflows/generate-audio.yml/dispatches`,
+            {
+                method: 'POST',
+                headers: ghHeaders(),
+                body: JSON.stringify({ ref: BRANCH, inputs: { set_id: setId, word: word } })
+            }
+        );
+        if (!resp.ok && resp.status !== 204) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(`${resp.status}: ${err.message || resp.statusText}`);
+        }
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '🔊 Vygenerovat znovu';
+        _showAudioModalStatus('❌', `Chyba: ${e.message}`);
+        return;
+    }
+
+    _showAudioModalStatus('⏳', `Čekám na spuštění workflow pro „${escHtml(word)}"…`);
+
+    _pollAudioWorkflow(setId, dispatchedAt, {
+        onStatus(status) {
+            const labels = { queued: 'Workflow ve frontě…', in_progress: `Generuji audio pro „${escHtml(word)}"…` };
+            const icons  = { queued: '⏳', in_progress: '🔄' };
+            if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
+        },
+        onSuccess(runId) {
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit na GitHubu</a>`;
+            btn.disabled = false;
+            btn.textContent = '🔊 Vygenerovat znovu';
+            _showAudioModalStatus('✅', `Audio pro „${escHtml(word)}" vygenerováno!`,
+                `${link} &nbsp;·&nbsp; <a href="#" style="color:inherit;text-decoration:underline;" onclick="event.preventDefault();_renderAudioWordList('${escHtml(setId)}')">📋 Zobrazit slova</a>`);
+        },
+        onFailure(runId, conclusion) {
+            const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit log na GitHubu</a>`;
+            btn.disabled = false;
+            btn.textContent = '🔊 Zkusit znovu';
+            _showAudioModalStatus('❌', `Generování selhalo (${conclusion}).`,
+                `${link} &nbsp;·&nbsp; <a href="#" style="color:inherit;text-decoration:underline;" onclick="event.preventDefault();_renderAudioWordList('${escHtml(setId)}')">📋 Zobrazit slova</a>`);
         },
         onTimeout() {
             _showAudioModalStatus('⚠️', 'Čas vypršel — workflow stále běží?',
