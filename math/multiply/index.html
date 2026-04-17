@@ -528,7 +528,12 @@ var _audioCtx = null;
 var _heartbeatInterval = null;
 
 function ensureAudioContext() {
-  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  } catch(e) {
+    soundEnabled = false;
+  }
   return _audioCtx;
 }
 
