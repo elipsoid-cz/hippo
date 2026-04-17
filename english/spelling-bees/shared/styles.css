@@ -753,6 +753,7 @@ input:read-only {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
+    margin-bottom: 0.5rem;
 }
 
 #header-desc.word-list-toggle::after {
@@ -768,10 +769,14 @@ input:read-only {
 
 .word-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.6rem;
-    padding: 0.75rem 0 0.5rem;
+    padding: 0.75rem 0.5rem 1rem;
     width: 100%;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 14px;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
 }
 
 .word-cards-grid.hidden {
@@ -788,7 +793,7 @@ input:read-only {
     transition: transform 0.1s ease, box-shadow 0.1s ease;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
 }
 
 .word-card:hover {
@@ -798,6 +803,12 @@ input:read-only {
 
 .word-card:active {
     transform: translateY(0);
+}
+
+.word-card-speaker {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    line-height: 1;
 }
 
 .word-card-en {

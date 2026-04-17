@@ -1385,12 +1385,16 @@ var SpellingBeeEngine = (function () {
             var translation = config.translations[word.toLowerCase()];
             var card = document.createElement("div");
             card.className = "word-card";
+            var speakerEl = document.createElement("div");
+            speakerEl.className = "word-card-speaker";
+            speakerEl.textContent = "\uD83D\uDD0A";
             var enEl = document.createElement("div");
             enEl.className = "word-card-en";
             enEl.textContent = word;
             var csEl = document.createElement("div");
             csEl.className = "word-card-cs";
             csEl.textContent = translation || "";
+            card.appendChild(speakerEl);
             card.appendChild(enEl);
             card.appendChild(csEl);
             card.addEventListener("click", function () {
@@ -1459,7 +1463,7 @@ var SpellingBeeEngine = (function () {
                 } else {
                     dom.startAllBtn.textContent = config.wordsPerRound > 0
                         ? "All Words (" + config.wordsPerRound + " per round)"
-                        : "Zač\u00edt";
+                        : "Play";
                 }
             }
             if (dom.startMistakesBtn) {
@@ -1483,7 +1487,7 @@ var SpellingBeeEngine = (function () {
                 } else {
                     dom.startAllBtn.textContent = config.wordsPerRound > 0
                         ? "START (" + config.wordsPerRound + " words)"
-                        : "Zač\u00edt";
+                        : "Play";
                 }
             }
             if (dom.mistakesGroup) hide(dom.mistakesGroup);
