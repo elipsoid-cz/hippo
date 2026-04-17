@@ -925,6 +925,7 @@ function handleAnswer(chosen) {
   });
 
   if (isCorrect) {
+    SoundEngine.playCorrect();
     var mult = comboMultiplier(state.streak) * (state.isBoss ? BOSS_MULTIPLIER : 1);
     var points = 10 * mult;
     var fast = elapsed < 2 ? FAST_BONUS : 0;
@@ -943,6 +944,7 @@ function handleAnswer(chosen) {
     flashScreen('green');
     showScorePop('+' + total, true);
   } else {
+    SoundEngine.playWrong();
     state.lives--;
     state.streak = 0;
     state.wrong++;
