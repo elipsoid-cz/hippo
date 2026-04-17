@@ -1288,7 +1288,7 @@ function loadWelcomeScreen() {
     localStorage.setItem('mathblaster-sound', String(soundEnabled));
     btn.textContent = soundEnabled ? '🔊' : '🔇';
     if (!soundEnabled) SoundEngine.stopBossHeartbeat();
-    ensureAudioContext();
+    if (soundEnabled) ensureAudioContext();
   });
 })();
 
