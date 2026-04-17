@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Math Blaster 👾</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d1a;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+
+    /* ── Shared ── */
+    .screen { display: none; width: 100%; max-width: 380px; }
+    .screen.active { display: flex; flex-direction: column; gap: 12px; }
+
+    .neon-title {
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: #ff6bff;
+      text-shadow: 0 0 20px #ff6bff, 0 0 40px #ff6bff88;
+      letter-spacing: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.75em;
+      letter-spacing: 2px;
+    }
+
+    .btn {
+      padding: 14px;
+      border: 2px solid #ff6bff;
+      background: #1a0533;
+      color: #ff6bff;
+      font-family: inherit;
+      font-size: 1em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 8px;
+      text-shadow: 0 0 8px #ff6bff;
+      box-shadow: 0 0 12px #ff6bff44;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { background: #2a0a4a; box-shadow: 0 0 20px #ff6bff88; }
+
+    .btn-cyan {
+      border-color: #00ffff; color: #00ffff;
+      background: #001a1a;
+      text-shadow: 0 0 8px #00ffff;
+      box-shadow: 0 0 12px #00ffff44;
+    }
+    .btn-cyan:hover { background: #002a2a; box-shadow: 0 0 20px #00ffff88; }
+
+    /* ── Welcome screen ── */
+    .nickname-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nickname-input {
+      flex: 1;
+      padding: 12px;
+      background: #111128;
+      border: 2px solid #444;
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1em;
+    }
+    .nickname-input:focus { outline: none; border-color: #ff6bff; }
+
+    .player-stats {
+      background: #111128;
+      border: 1px solid #ff6bff33;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-label { color: #888; font-size: 0.65em; letter-spacing: 1px; }
+    .stat-value { color: #ff6bff; font-size: 1.1em; font-weight: bold; }
+
+    /* ── Leaderboard ── */
+    .leaderboard-box {
+      background: #111128;
+      border: 1px solid #ff6bff22;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .leaderboard-title {
+      color: #ffff00;
+      font-size: 0.7em;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 0.8em;
+      border-bottom: 1px solid #ffffff0a;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.me { color: #00ffff; }
+    .lb-rank { width: 28px; color: #888; }
+    .lb-name { flex: 1; }
+    .lb-score { color: #ffff00; }
+    .lb-empty { color: #555; font-size: 0.75em; text-align: center; padding: 8px 0; }
+
+    /* ── Game screen ── */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .lives { font-size: 1.2em; letter-spacing: 2px; }
+
+    .streak-display {
+      color: #ff9900;
+      font-size: 0.7em;
+      letter-spacing: 1px;
+    }
+
+    .level-display {
+      color: #ff6bff;
+      font-size: 0.65em;
+      letter-spacing: 1px;
+    }
+
+    .timer-bar-wrap {
+      background: #1a1a3e;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.1s linear, background 0.3s;
+      width: 100%;
+    }
+
+    .question-panel {
+      background: #111128;
+      border: 1px solid #ffffff11;
+      border-radius: 10px;
+      padding: 16px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .question-panel.boss-mode {
+      border-color: #ff4444;
+      box-shadow: 0 0 20px #ff444433;
+      animation: boss-pulse 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes boss-pulse {
+      from { box-shadow: 0 0 10px #ff444433; }
+      to { box-shadow: 0 0 30px #ff444466; }
+    }
+
+    .question-text {
+      text-align: center;
+      color: #00ffff;
+      font-size: 2.8em;
+      font-weight: bold;
+      text-shadow: 0 0 15px #00ffff;
+      letter-spacing: 4px;
+    }
+
+    .boss-label {
+      text-align: center;
+      color: #ff4444;
+      font-size: 0.7em;
+      letter-spacing: 3px;
+      display: none;
+    }
+    .boss-mode .boss-label { display: block; }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .answer-btn {
+      padding: 16px 0;
+      text-align: center;
+      font-family: inherit;
+      font-size: 1.8em;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid;
+      background: #1a1a3e;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .answer-btn:active { transform: scale(0.96); }
+
+    .answer-btn.color-0 { color: #ff6bff; border-color: #ff6bff; box-shadow: 0 0 8px #ff6bff33; }
+    .answer-btn.color-1 { color: #00ffff; border-color: #00ffff; box-shadow: 0 0 8px #00ffff33; }
+    .answer-btn.color-2 { color: #00ff88; border-color: #00ff88; box-shadow: 0 0 8px #00ff8833; background: #002a1a; }
+    .answer-btn.color-3 { color: #ffff00; border-color: #ffff00; box-shadow: 0 0 8px #ffff0033; }
+
+    .answer-btn.correct {
+      background: #003322 !important;
+      border-color: #00ff88 !important;
+      box-shadow: 0 0 20px #00ff8877 !important;
+    }
+    .answer-btn.wrong {
+      background: #330000 !important;
+      border-color: #ff4444 !important;
+      box-shadow: 0 0 20px #ff444477 !important;
+    }
+    .answer-btn:disabled { cursor: default; }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65em;
+      letter-spacing: 1px;
+    }
+    .score-val { color: #ffff00; }
+    .combo-val { color: #ff9900; }
+
+    /* ── Flash overlay ── */
+    .flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 100;
+    }
+    .flash.green { background: #00ff8822; }
+    .flash.red   { background: #ff444422; }
+    .flash.show  { opacity: 1; }
+
+    /* ── Score pop ── */
+    .score-pop {
+      position: fixed;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 1.4em;
+      pointer-events: none;
+      z-index: 101;
+      opacity: 0;
+      transition: opacity 0.1s, transform 0.4s;
+    }
+
+    /* ── Result screen ── */
+    .result-box {
+      background: #111128;
+      border: 1px solid #ff6bff22;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85em;
+    }
+    .result-label { color: #888; }
+    .result-value { color: #ffff00; font-weight: bold; }
+
+    .levelup-banner {
+      text-align: center;
+      color: #ff6bff;
+      font-size: 1.1em;
+      text-shadow: 0 0 12px #ff6bff;
+      letter-spacing: 2px;
+      animation: levelup-flash 0.5s ease-in-out 3;
+      display: none;
+    }
+    @keyframes levelup-flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .badge-chip {
+      background: #1a1a3e;
+      border: 1px solid #ff6bff44;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.75em;
+      color: #ff6bff;
+    }
+
+    .xp-breakdown {
+      background: #0d0d2a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.7em;
+      color: #888;
+      line-height: 1.8;
+    }
+    .xp-line-value { color: #00ff88; }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Game over ── */
+    .gameover-text {
+      text-align: center;
+      font-size: 3em;
+      color: #ff4444;
+      text-shadow: 0 0 20px #ff4444;
+      letter-spacing: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Flash overlay -->
+  <div class="flash" id="flash"></div>
+
+  <!-- ══════════════════════════════
+       WELCOME SCREEN
+  ══════════════════════════════ -->
+  <div class="screen" id="screen-welcome">
+    <div class="neon-title">👾 MATH<br>BLASTER</div>
+    <div class="subtitle">PROCVIČUJ NÁSOBILKU</div>
+
+    <div id="player-stats" class="player-stats">
+      <div>
+        <div class="stat-label">LEVEL</div>
+        <div class="stat-value" id="stat-level">1</div>
+      </div>
+      <div style="text-align:center">
+        <div class="stat-label">XP</div>
+        <div class="stat-value" id="stat-xp">0</div>
+      </div>
+      <div style="text-align:right">
+        <div class="stat-label">ODZNAKY</div>
+        <div class="stat-value" id="stat-badges">0</div>
+      </div>
+    </div>
+
+    <div class="nickname-row">
+      <input type="text" id="nickname-input" class="nickname-input"
+        placeholder="Tvoje jméno..." maxlength="15" autocomplete="off" />
+    </div>
+
+    <button class="btn" id="btn-start">▶ START</button>
+
+    <div class="leaderboard-box">
+      <div class="leaderboard-title">🏆 LEADERBOARD</div>
+      <div id="leaderboard-welcome"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       GAME SCREEN
+  ══════════════════════════════ -->
+  <div class="screen" id="screen-game">
+    <div class="hud">
+      <div class="lives" id="lives-display">❤️❤️❤️</div>
+      <div class="streak-display" id="streak-display"></div>
+      <div class="level-display" id="level-display">LVL 1</div>
+    </div>
+
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+
+    <div class="question-panel" id="question-panel">
+      <div class="boss-label">👾 BOSS FIGHT</div>
+      <div class="question-text" id="question-text">7 × 8 = ?</div>
+      <div class="answer-grid" id="answer-grid">
+        <!-- tlačítka generovány JS -->
+      </div>
+    </div>
+
+    <div class="score-row">
+      <span>SKÓRE: <span class="score-val" id="score-display">0</span></span>
+      <span class="combo-val" id="combo-display"></span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       RESULT SCREEN
+  ══════════════════════════════ -->
+  <div class="screen" id="screen-result">
+    <div class="neon-title" style="font-size:1.4em">VÝSLEDKY</div>
+
+    <div class="levelup-banner" id="levelup-banner">⭐ LEVEL UP! ⭐</div>
+
+    <div class="result-box" id="result-box">
+      <div class="result-row">
+        <span class="result-label">SKÓRE</span>
+        <span class="result-value" id="res-score">0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">SPRÁVNĚ</span>
+        <span class="result-value" id="res-correct">0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">ŠPATNĚ</span>
+        <span class="result-value" id="res-wrong">0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">XP ZÍSKÁNO</span>
+        <span class="result-value" id="res-xp">+0</span>
+      </div>
+    </div>
+
+    <div class="xp-breakdown" id="xp-breakdown"></div>
+
+    <div class="badges-row" id="new-badges"></div>
+
+    <!-- Save score panel (generován JS) -->
+    <div id="save-panel"></div>
+
+    <div class="leaderboard-box">
+      <div class="leaderboard-title">🏆 LEADERBOARD</div>
+      <div id="leaderboard-result"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-cyan" id="btn-play-again">▶ ZNOVU</button>
+      <button class="btn" id="btn-back-home">🏠 ÚVOD</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       GAME OVER SCREEN
+  ══════════════════════════════ -->
+  <div class="screen" id="screen-gameover">
+    <div class="gameover-text">💀<br>GAME<br>OVER</div>
+    <div class="subtitle" id="gameover-score"></div>
+    <div class="result-box" style="margin-top:8px">
+      <div class="result-row">
+        <span class="result-label">SKÓRE</span>
+        <span class="result-value" id="go-score">0</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">SPRÁVNĚ</span>
+        <span class="result-value" id="go-correct">0</span>
+      </div>
+    </div>
+    <!-- Save panel pro game over -->
+    <div id="go-save-panel"></div>
+    <div class="leaderboard-box">
+      <div class="leaderboard-title">🏆 LEADERBOARD</div>
+      <div id="leaderboard-gameover"></div>
+    </div>
+    <button class="btn" id="btn-go-home">🏠 ZPĚT NA ÚVOD</button>
+  </div>
+
+  <script>
+// ══════════════════════════
+//  KONFIGURACE
+// ══════════════════════════
+var TIMER_NORMAL = 6;
+var TIMER_BOSS   = 4;
+var ROUND_SIZE   = 10;
+var BOSS_SIZE    = 5;
+var COMBO_2X     = 3;
+var COMBO_3X     = 6;
+var FAST_BONUS   = 5;
+var BOSS_MULTIPLIER = 2;
+
+var XP_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
+
+var BADGE_DEFS = [
+  { id: 'first_round',   emoji: '🔥',       label: 'První krok',    desc: 'Dohrát první kolo' },
+  { id: 'boss_killer',   emoji: '👾',       label: 'Boss Killer',   desc: 'Přežít první boss fight' },
+  { id: 'speedster',     emoji: '⚡',       label: 'Rychlostřelec', desc: '5× rychlá odpověď v jednom kole' },
+  { id: 'perfect_round', emoji: '💎',       label: 'Perfektní',     desc: 'Kolo bez jediné chyby' },
+  { id: 'combo_master',  emoji: '🔥🔥🔥',   label: 'Kombo Master',  desc: 'Série 8+ v kuse' },
+  { id: 'level5',        emoji: '🏆',       label: 'Level 5',       desc: 'Postoupit na level 5' },
+];
+
+// ══════════════════════════
+//  GAME STATE
+// ══════════════════════════
+var state = {
+  score: 0,
+  lives: 3,
+  streak: 0,
+  maxStreak: 0,
+  correct: 0,
+  wrong: 0,
+  xpEarned: 0,
+  xpBase: 0,
+  xpCombo: 0,
+  xpBoss: 0,
+  fastAnswers: 0,
+  isBoss: false,
+  questionIndex: 0,
+  roundWrong: 0,
+  usedPairs: [],
+  newBadges: [],
+};
+
+// ══════════════════════════
+//  LOCAL STORAGE
+// ══════════════════════════
+function loadProgress() {
+  return {
+    xp:      parseInt(localStorage.getItem('mathblaster-xp') || '0', 10),
+    level:   parseInt(localStorage.getItem('mathblaster-level') || '1', 10),
+    badges:  JSON.parse(localStorage.getItem('mathblaster-badges') || '[]'),
+    nickname: localStorage.getItem('mathblaster-nickname') || '',
+  };
+}
+
+function saveXP(xp, level) {
+  localStorage.setItem('mathblaster-xp', String(xp));
+  localStorage.setItem('mathblaster-level', String(level));
+}
+
+function saveNickname(nick) {
+  localStorage.setItem('mathblaster-nickname', nick);
+}
+
+function saveBadge(id) {
+  var badges = JSON.parse(localStorage.getItem('mathblaster-badges') || '[]');
+  if (badges.indexOf(id) === -1) {
+    badges.push(id);
+    localStorage.setItem('mathblaster-badges', JSON.stringify(badges));
+    return true;
+  }
+  return false;
+}
+
+// ══════════════════════════
+//  XP + LEVELY
+// ══════════════════════════
+function xpToLevel(xp) {
+  var level = 1;
+  for (var i = 0; i < XP_THRESHOLDS.length; i++) {
+    if (xp >= XP_THRESHOLDS[i]) level = i + 1;
+    else break;
+  }
+  return Math.min(level, 10);
+}
+
+function xpForNextLevel(level) {
+  return XP_THRESHOLDS[Math.min(level, 9)];
+}
+
+// ══════════════════════════
+//  COMBO MULTIPLIER
+// ══════════════════════════
+function comboMultiplier(streak) {
+  if (streak >= COMBO_3X) return 3;
+  if (streak >= COMBO_2X) return 2;
+  return 1;
+}
+  </script>
+</body>
+</html>
