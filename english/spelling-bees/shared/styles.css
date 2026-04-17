@@ -22,25 +22,7 @@ body {
 }
 
 /* Floating background decorations */
-.bg-float {
-    position: fixed;
-    pointer-events: none;
-    z-index: 0;
-    font-size: 2rem;
-    opacity: 0.12;
-    animation: bgFloat 8s ease-in-out infinite;
-}
-.bg-float:nth-child(1) { top: 8%;  left: 4%;  animation-delay: 0s;  animation-duration: 7s; }
-.bg-float:nth-child(2) { top: 30%; right: 5%; animation-delay: 2s;  animation-duration: 9s; }
-.bg-float:nth-child(3) { top: 60%; left: 3%;  animation-delay: 4s;  animation-duration: 8s; }
-.bg-float:nth-child(4) { top: 80%; right: 4%; animation-delay: 1s;  animation-duration: 10s; }
-@keyframes bgFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50%       { transform: translateY(-18px) rotate(8deg); }
-}
 #game-container { position: relative; z-index: 1; }
-/* Hide animated background during the game (keep only on welcome/final screens) */
-body:has(#game-zone:not(.hidden)) .bg-float { display: none; }
 
 /* Cover image on welcome screen */
 #set-cover {
