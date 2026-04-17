@@ -327,6 +327,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-04-20": {
+        cover: true,
         title: "April 20",
         date: "2026-04-20",
         description: "City places and structures",
