@@ -857,6 +857,166 @@ function handleAnswer(chosen) {
     }
   }, 600);
 }
+
+// ══════════════════════════
+//  GAME FLOW
+// ══════════════════════════
+function resetState() {
+  state.score = 0;
+  state.lives = 3;
+  state.streak = 0;
+  state.maxStreak = 0;
+  state.correct = 0;
+  state.wrong = 0;
+  state.xpEarned = 0;
+  state.xpBase = 0;
+  state.xpCombo = 0;
+  state.xpBoss = 0;
+  state.fastAnswers = 0;
+  state.isBoss = false;
+  state.questionIndex = 0;
+  state.roundWrong = 0;
+  state.usedPairs = [];
+  state.newBadges = [];
+}
+
+function startGame() {
+  var nick = document.getElementById('nickname-input').value.trim();
+  if (!nick) { alert('Zadej své jméno!'); return; }
+  saveNickname(nick);
+  resetState();
+  dom.questionPanel.classList.remove('boss-mode');
+  showScreen('game');
+  updateHUD();
+  renderQuestion();
+}
+
+function endRound() {
+  var earnedFirstRound = saveBadge('first_round');
+  if (earnedFirstRound) state.newBadges.push('first_round');
+
+  if (state.roundWrong === 0) {
+    var earnedPerfect = saveBadge('perfect_round');
+    if (earnedPerfect) state.newBadges.push('perfect_round');
+  }
+
+  if (state.fastAnswers >= 5) {
+    var earnedSpeed = saveBadge('speedster');
+    if (earnedSpeed) state.newBadges.push('speedster');
+  }
+
+  state.isBoss = true;
+  state.questionIndex = 0;
+  state.roundWrong = 0;
+  state.fastAnswers = 0;
+  dom.questionPanel.classList.add('boss-mode');
+  renderQuestion();
+}
+
+function endBoss() {
+  var earnedBoss = saveBadge('boss_killer');
+  if (earnedBoss) state.newBadges.push('boss_killer');
+
+  if (state.maxStreak >= 8) {
+    var earnedCombo = saveBadge('combo_master');
+    if (earnedCombo) state.newBadges.push('combo_master');
+  }
+
+  showResultScreen();
+}
+
+function gameOver() {
+  stopTimer();
+  applyXP();
+  showScreen('gameover');
+  document.getElementById('go-score').textContent = state.score;
+  document.getElementById('go-correct').textContent = state.correct + ' / ' + (state.correct + state.wrong);
+  renderSavePanelInto('go-save-panel', 'leaderboard-gameover');
+  loadLeaderboard(function(entries) {
+    renderLeaderboard(entries, loadProgress().nickname, 'leaderboard-gameover');
+  });
+}
+
+function applyXP() {
+  state.xpEarned = Math.round((state.xpBase + state.xpCombo + state.xpBoss) / 10);
+  var progress = loadProgress();
+  var oldLevel = progress.level;
+  var newXP = progress.xp + state.xpEarned;
+  var newLevel = xpToLevel(newXP);
+  saveXP(newXP, newLevel);
+  if (newLevel >= 5) {
+    var earnedL5 = saveBadge('level5');
+    if (earnedL5) state.newBadges.push('level5');
+  }
+  return { oldLevel: oldLevel, newLevel: newLevel };
+}
+
+function showResultScreen() {
+  var levelResult = applyXP();
+  var progress = loadProgress();
+
+  showScreen('result');
+
+  document.getElementById('res-score').textContent   = state.score;
+  document.getElementById('res-correct').textContent = state.correct + ' / ' + (state.correct + state.wrong);
+  document.getElementById('res-wrong').textContent   = state.wrong;
+  document.getElementById('res-xp').textContent      = '+' + state.xpEarned + ' XP';
+
+  var breakdown = document.getElementById('xp-breakdown');
+  breakdown.innerHTML =
+    'Za správné odpovědi: <span class="xp-line-value">+' + state.xpBase + ' bodů</span><br>' +
+    (state.xpCombo ? 'Combo bonus: <span class="xp-line-value">+' + state.xpCombo + ' bodů</span><br>' : '') +
+    (state.xpBoss  ? 'Boss bonus: <span class="xp-line-value">+' + state.xpBoss  + ' bodů</span><br>' : '') +
+    '→ Celkem XP: <span class="xp-line-value">+' + state.xpEarned + ' XP</span> (celkem: ' + progress.xp + ')';
+
+  var levelupBanner = document.getElementById('levelup-banner');
+  if (levelResult.newLevel > levelResult.oldLevel) {
+    levelupBanner.textContent = '⭐ LEVEL UP! LEVEL ' + levelResult.newLevel + ' ⭐';
+    levelupBanner.style.display = 'block';
+  } else {
+    levelupBanner.style.display = 'none';
+  }
+
+  var badgesRow = document.getElementById('new-badges');
+  badgesRow.innerHTML = '';
+  if (state.newBadges.length > 0) {
+    var title = document.createElement('div');
+    title.style.cssText = 'width:100%;text-align:center;color:#ffff00;font-size:0.7em;letter-spacing:2px;margin-bottom:4px;';
+    title.textContent = 'NOVÉ ODZNAKY';
+    badgesRow.appendChild(title);
+    state.newBadges.forEach(function(id) {
+      var def = BADGE_DEFS.find(function(d) { return d.id === id; });
+      if (def) {
+        var chip = document.createElement('div');
+        chip.className = 'badge-chip';
+        chip.textContent = def.emoji + ' ' + def.label;
+        badgesRow.appendChild(chip);
+      }
+    });
+  }
+
+  renderSavePanelInto('save-panel', 'leaderboard-result');
+  loadLeaderboard(function(entries) {
+    renderLeaderboard(entries, loadProgress().nickname, 'leaderboard-result');
+  });
+}
+
+// ══════════════════════════
+//  TLAČÍTKA
+// ══════════════════════════
+document.getElementById('btn-start').onclick = startGame;
+document.getElementById('nickname-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') startGame();
+});
+document.getElementById('btn-play-again').onclick = function() {
+  resetState();
+  dom.questionPanel.classList.remove('boss-mode');
+  showScreen('game');
+  updateHUD();
+  renderQuestion();
+};
+document.getElementById('btn-back-home').onclick = function() { showScreen('welcome'); loadWelcomeScreen(); };
+document.getElementById('btn-go-home').onclick   = function() { showScreen('welcome'); loadWelcomeScreen(); };
   </script>
 </body>
 </html>
