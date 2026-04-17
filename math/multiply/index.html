@@ -943,6 +943,7 @@ function endBoss() {
 
 function gameOver() {
   stopTimer();
+  document.body.classList.remove('boss-bg');
   applyXP();
   showScreen('gameover');
   document.getElementById('go-score').textContent = state.score;
@@ -968,6 +969,7 @@ function applyXP() {
 }
 
 function showResultScreen() {
+  document.body.classList.remove('boss-bg');
   var levelResult = applyXP();
   var progress = loadProgress();
 
