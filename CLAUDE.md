@@ -1,5 +1,9 @@
 # Claude Instructions for Hippo Project
 
+## Superpowers / Skills
+- **Vždy se zeptej uživatele před použitím superpowers pluginu** (brainstorming, writing-plans, subagent-driven-development, atd.) — zbytečné použití spaluje tokeny.
+- Výjimka: `superpowers:verification-before-completion` a `superpowers:systematic-debugging` lze použít bez ptaní.
+
 ## Project Overview
 Hippo 🦛 is an interactive web application for learning — English language exercises and math games.
 

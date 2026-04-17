@@ -1388,15 +1388,18 @@ var SpellingBeeEngine = (function () {
             var speakerEl = document.createElement("div");
             speakerEl.className = "word-card-speaker";
             speakerEl.textContent = "\uD83D\uDD0A";
+            var textEl = document.createElement("div");
+            textEl.className = "word-card-text";
             var enEl = document.createElement("div");
             enEl.className = "word-card-en";
             enEl.textContent = word;
             var csEl = document.createElement("div");
             csEl.className = "word-card-cs";
             csEl.textContent = translation || "";
+            textEl.appendChild(enEl);
+            textEl.appendChild(csEl);
             card.appendChild(speakerEl);
-            card.appendChild(enEl);
-            card.appendChild(csEl);
+            card.appendChild(textEl);
             card.addEventListener("click", function () {
                 speak(word, false);
             });
@@ -1410,28 +1413,49 @@ var SpellingBeeEngine = (function () {
         if (dom.headerDesc.dataset.wordListInit) return;
         dom.headerDesc.dataset.wordListInit = "1";
 
+        // Hide subtitle — cards replace it
+        dom.headerDesc.style.display = "none";
+
+        // Show grid and render cards
+        dom.wordCardsGrid.classList.remove("hidden");
         renderWordCards();
 
-        var seenKey = "hippo-wordlist-seen-" + config.setId;
-        var alreadySeen = localStorage.getItem(seenKey);
+        // Less than 3 rows (≤4 cards) — no need to collapse
+        if (dom.wordCardsGrid.children.length <= 4) return;
 
-        if (!alreadySeen) {
-            dom.wordCardsGrid.classList.remove("hidden");
-            dom.headerDesc.classList.add("expanded");
-            localStorage.setItem(seenKey, "1");
-        }
+        // Wrap grid in collapsible wrapper
+        var wrapper = document.createElement("div");
+        wrapper.id = "word-preview-wrapper";
+        dom.wordCardsGrid.parentNode.insertBefore(wrapper, dom.wordCardsGrid);
+        wrapper.appendChild(dom.wordCardsGrid);
 
-        dom.headerDesc.classList.add("word-list-toggle");
+        // After layout is painted, measure 2-row height and add fade
+        requestAnimationFrame(function () {
+            var cards = dom.wordCardsGrid.children;
+            // card index 4 = first card of row 3 (2 columns × 2 rows = 4 cards)
+            var row3First = cards[4];
+            if (!row3First) return;
 
-        dom.headerDesc.addEventListener("click", function () {
-            var isExpanded = !dom.wordCardsGrid.classList.contains("hidden");
-            if (isExpanded) {
-                dom.wordCardsGrid.classList.add("hidden");
-                dom.headerDesc.classList.remove("expanded");
-            } else {
-                dom.wordCardsGrid.classList.remove("hidden");
-                dom.headerDesc.classList.add("expanded");
-            }
+            wrapper.style.maxHeight = row3First.offsetTop + "px";
+
+            var fade = document.createElement("div");
+            fade.id = "word-preview-fade";
+
+            var showAllBtn = document.createElement("button");
+            showAllBtn.id = "word-preview-show-all";
+            showAllBtn.textContent = "Show all";
+            showAllBtn.addEventListener("click", function () {
+                // Animate to full height, then remove constraint
+                wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                fade.remove();
+                setTimeout(function () {
+                    wrapper.style.maxHeight = "none";
+                    wrapper.style.overflow = "visible";
+                }, 350);
+            });
+
+            fade.appendChild(showAllBtn);
+            wrapper.appendChild(fade);
         });
     }
 
