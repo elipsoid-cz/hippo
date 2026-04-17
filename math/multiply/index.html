@@ -520,6 +520,82 @@ var COMBO_3X     = 6;
 var FAST_BONUS   = 5;
 var BOSS_MULTIPLIER = 2;
 
+// ══════════════════════════
+//  SOUND ENGINE
+// ══════════════════════════
+var soundEnabled = (localStorage.getItem('mathblaster-sound') !== 'false');
+var _audioCtx = null;
+var _heartbeatInterval = null;
+
+function ensureAudioContext() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+
+var SoundEngine = {
+  playCorrect: function() {
+    if (!soundEnabled) return;
+    var ctx = ensureAudioContext();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  },
+
+  playWrong: function() {
+    if (!soundEnabled) return;
+    var ctx = ensureAudioContext();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  },
+
+  playBossTick: function() {
+    if (!soundEnabled) return;
+    var ctx = ensureAudioContext();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.08);
+  },
+
+  playBossHeartbeat: function() {
+    SoundEngine.stopBossHeartbeat();
+    SoundEngine.playBossTick();
+    _heartbeatInterval = setInterval(function() {
+      SoundEngine.playBossTick();
+    }, 700);
+  },
+
+  stopBossHeartbeat: function() {
+    if (_heartbeatInterval) {
+      clearInterval(_heartbeatInterval);
+      _heartbeatInterval = null;
+    }
+  }
+};
+
 var XP_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
 
 var BADGE_DEFS = [
