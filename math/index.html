@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math 👾 Hippo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d1a;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+
+    .back-link {
+      align-self: flex-start;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.75em;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #999; }
+
+    .hub-title {
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: #ff6bff;
+      text-shadow: 0 0 20px #ff6bff, 0 0 40px #ff6bff88;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+    }
+
+    .hub-subtitle {
+      text-align: center;
+      color: #555;
+      font-size: 0.75em;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
+
+    .game-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .game-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #111128;
+      border: 2px solid #ff6bff33;
+      border-radius: 12px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .game-card:hover {
+      border-color: #ff6bff;
+      box-shadow: 0 0 20px #ff6bff22;
+    }
+
+    .game-icon {
+      font-size: 2.5em;
+      flex-shrink: 0;
+    }
+
+    .game-info { flex: 1; }
+
+    .game-name {
+      color: #ff6bff;
+      font-size: 1em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .game-desc {
+      color: #666;
+      font-size: 0.7em;
+      letter-spacing: 1px;
+      line-height: 1.5;
+    }
+
+    .game-badge {
+      background: #ff6bff22;
+      border: 1px solid #ff6bff55;
+      color: #ff6bff;
+      font-size: 0.6em;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="../">← HIPPOBEE</a>
+
+  <div class="hub-title">👾 MATH</div>
+  <div class="hub-subtitle">PROCVIČUJ MATEMATIKU</div>
+
+  <div class="game-grid">
+    <a class="game-card" href="multiply/">
+      <div class="game-icon">✖️</div>
+      <div class="game-info">
+        <div class="game-name">MATH BLASTER</div>
+        <div class="game-desc">Násobilka — retro arcade hra<br>s životy, combem a leaderboardem</div>
+      </div>
+      <div class="game-badge">NOVÉ</div>
+    </a>
+  </div>
+</body>
+</html>
