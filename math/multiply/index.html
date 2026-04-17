@@ -578,6 +578,68 @@ function comboMultiplier(streak) {
   if (streak >= COMBO_2X) return 2;
   return 1;
 }
+
+// ══════════════════════════
+//  GENEROVÁNÍ OTÁZEK
+// ══════════════════════════
+
+function randomPair() {
+  var attempts = 0;
+  while (attempts < 200) {
+    var a = Math.floor(Math.random() * 8) + 2;
+    var b = Math.floor(Math.random() * 8) + 2;
+    var key = a + 'x' + b;
+    var keyRev = b + 'x' + a;
+    if (state.usedPairs.indexOf(key) === -1 && state.usedPairs.indexOf(keyRev) === -1) {
+      state.usedPairs.push(key);
+      return [a, b];
+    }
+    attempts++;
+  }
+  state.usedPairs = [];
+  var a = Math.floor(Math.random() * 8) + 2;
+  var b = Math.floor(Math.random() * 8) + 2;
+  state.usedPairs.push(a + 'x' + b);
+  return [a, b];
+}
+
+function generateDistractors(a, b) {
+  var correct = a * b;
+  var options = [correct];
+
+  var close = correct + (Math.random() < 0.5 ? a : b) * (Math.random() < 0.5 ? 1 : -1);
+  if (close !== correct && close > 0) options.push(close);
+
+  var tries = 0;
+  while (options.length < 3 && tries < 50) {
+    var x = Math.floor(Math.random() * 8) + 2;
+    var y = Math.floor(Math.random() * 8) + 2;
+    var val = x * y;
+    if (options.indexOf(val) === -1) options.push(val);
+    tries++;
+  }
+
+  tries = 0;
+  while (options.length < 4 && tries < 100) {
+    var base = correct + (Math.floor(Math.random() * 20) - 10);
+    if (base > 0 && options.indexOf(base) === -1) options.push(base);
+    tries++;
+  }
+
+  for (var i = options.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = options[i]; options[i] = options[j]; options[j] = tmp;
+  }
+
+  return options;
+}
+
+function generateQuestion() {
+  var pair = randomPair();
+  var a = pair[0], b = pair[1];
+  var options = generateDistractors(a, b);
+  return { a: a, b: b, correct: a * b, options: options };
+}
   </script>
 </body>
 </html>
