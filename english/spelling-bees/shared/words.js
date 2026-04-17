@@ -326,6 +326,35 @@ var SPELLING_BEE_SETS = {
             "chivalry": "rytířství",
         },
     },
+    "2026-04-20": {
+        title: "April 20",
+        date: "2026-04-20",
+        description: "City places and structures",
+        words: [
+            "University",
+            "Airport",
+            "High-Rise Building",
+            "Chemist",
+            "Theatre",
+            "Post Office",
+            "Statue",
+            "Cardinal Directions",
+            "Skyscraper",
+            "Location",
+        ],
+        translations: {
+            "university": "Vysoká škola",
+            "airport": "Letiště",
+            "high-rise building": "Výšková budova",
+            "chemist": "Lékárna",
+            "theatre": "Divadlo",
+            "post office": "Pošta",
+            "statue": "Socha",
+            "cardinal directions": "Světové strany",
+            "skyscraper": "Mrakodrap",
+            "location": "Poloha",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
