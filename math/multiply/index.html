@@ -1017,6 +1017,151 @@ document.getElementById('btn-play-again').onclick = function() {
 };
 document.getElementById('btn-back-home').onclick = function() { showScreen('welcome'); loadWelcomeScreen(); };
 document.getElementById('btn-go-home').onclick   = function() { showScreen('welcome'); loadWelcomeScreen(); };
+
+// ══════════════════════════
+//  FIREBASE
+// ══════════════════════════
+var FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyB-prvqJmm0Jdt4kQAA-f5BQXmaC8VGP44",
+  authDomain:        "hippo-cz.firebaseapp.com",
+  projectId:         "hippo-cz",
+  storageBucket:     "hippo-cz.firebasestorage.app",
+  messagingSenderId: "881228649401",
+  appId:             "1:881228649401:web:2d81c97045155687a51c68"
+};
+
+var COLLECTION = 'leaderboards/math-multiply/scores';
+var db = null;
+var firebaseReady = false;
+
+function loadFirebaseSDK(callback) {
+  if (firebaseReady) { callback(); return; }
+  var s1 = document.createElement('script');
+  s1.src = 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js';
+  s1.onload = function() {
+    var s2 = document.createElement('script');
+    s2.src = 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js';
+    s2.onload = function() {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      firebaseReady = true;
+      callback();
+    };
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+}
+
+function loadLeaderboard(callback) {
+  loadFirebaseSDK(function() {
+    db.collection(COLLECTION)
+      .get()
+      .then(function(snap) {
+        var entries = [];
+        snap.forEach(function(doc) { entries.push(doc.data()); });
+        entries.sort(function(a, b) {
+          if (b.score !== a.score) return b.score - a.score;
+          return new Date(a.date) - new Date(b.date);
+        });
+        callback(entries);
+      })
+      .catch(function(err) {
+        console.error('[MathBlaster] loadLeaderboard error:', err);
+        callback([]);
+      });
+  });
+}
+
+function submitScore(nickname, callback) {
+  if (!firebaseReady || state.score <= 0) { if (callback) callback(); return; }
+  var progress = loadProgress();
+  var key = nickname.toLowerCase().replace(/[^a-z0-9]/g, '');
+  var ref = db.collection(COLLECTION).doc(key);
+  ref.get().then(function(doc) {
+    var existing = doc.exists ? doc.data() : null;
+    if (!existing || state.score > (existing.score || 0)) {
+      return ref.set({
+        nickname: nickname,
+        score:    state.score,
+        level:    progress.level,
+        date:     new Date().toISOString()
+      });
+    }
+  })
+  .then(function() { if (callback) callback(); })
+  .catch(function(err) {
+    console.error('[MathBlaster] submitScore error:', err);
+    if (callback) callback();
+  });
+}
+
+function renderLeaderboard(entries, currentNick, containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '<div class="lb-empty">Zatím žádné skóre — buď první!</div>';
+    return;
+  }
+  var medals = ['🥇', '🥈', '🥉'];
+  entries.slice(0, 10).forEach(function(entry, i) {
+    var row = document.createElement('div');
+    row.className = 'lb-row' + (currentNick && entry.nickname.toLowerCase() === currentNick.toLowerCase() ? ' me' : '');
+    row.innerHTML =
+      '<span class="lb-rank">' + (medals[i] || (i + 1) + '.') + '</span>' +
+      '<span class="lb-name">' + entry.nickname + '</span>' +
+      '<span class="lb-score">' + entry.score + '</span>';
+    container.appendChild(row);
+  });
+}
+
+function renderSavePanelInto(panelId, lbContainerId) {
+  var panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.innerHTML = '';
+  if (state.score <= 0) return;
+
+  var progress = loadProgress();
+  var savedNick = progress.nickname;
+
+  panel.innerHTML =
+    '<div style="background:#111128;border:1px solid #ff6bff33;border-radius:8px;padding:12px;margin-bottom:8px;">' +
+    '<div style="color:#888;font-size:0.7em;letter-spacing:2px;margin-bottom:8px;">ULOŽIT SKÓRE?</div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<input type="text" id="save-nick-' + panelId + '" class="nickname-input" placeholder="Tvoje jméno..." maxlength="15" value="' + savedNick.replace(/"/g, '&quot;') + '" />' +
+    '<button class="btn" id="save-btn-' + panelId + '" style="flex:0 0 auto;padding:12px 16px;">Uložit</button>' +
+    '</div></div>';
+
+  document.getElementById('save-btn-' + panelId).onclick = function() {
+    var nick = document.getElementById('save-nick-' + panelId).value.trim();
+    if (!nick) return;
+    saveNickname(nick);
+    submitScore(nick, function() {
+      panel.innerHTML = '<div style="color:#00ff88;text-align:center;font-size:0.8em;letter-spacing:2px;padding:8px;">✓ SKÓRE ULOŽENO</div>';
+      loadLeaderboard(function(entries) {
+        renderLeaderboard(entries, nick, lbContainerId);
+      });
+    });
+  };
+}
+
+// ══════════════════════════
+//  WELCOME SCREEN INIT
+// ══════════════════════════
+function loadWelcomeScreen() {
+  var progress = loadProgress();
+  document.getElementById('stat-level').textContent  = progress.level;
+  document.getElementById('stat-xp').textContent     = progress.xp;
+  document.getElementById('stat-badges').textContent = progress.badges.length + ' / ' + BADGE_DEFS.length;
+  document.getElementById('nickname-input').value    = progress.nickname;
+
+  loadLeaderboard(function(entries) {
+    renderLeaderboard(entries, progress.nickname, 'leaderboard-welcome');
+  });
+}
+
+loadWelcomeScreen();
+showScreen('welcome');
   </script>
 </body>
 </html>
