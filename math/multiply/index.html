@@ -180,6 +180,12 @@
 
     body.boss-bg {
       background: #1a0505;
+      animation: boss-bg-pulse 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes boss-bg-pulse {
+      from { background: #1a0505; }
+      to   { background: #3a0808; }
     }
 
     .question-text {
