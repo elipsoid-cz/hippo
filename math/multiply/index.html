@@ -369,7 +369,7 @@
   </style>
 </head>
 <body>
-  <button id="sound-toggle" title="Zvuk zapnout/vypnout">🔊</button>
+  <button id="sound-toggle" type="button" title="Zvuk zapnout/vypnout">🔊</button>
 
   <!-- Flash overlay -->
   <div class="flash" id="flash"></div>
@@ -1278,6 +1278,19 @@ function loadWelcomeScreen() {
     renderLeaderboard(entries, progress.nickname, 'leaderboard-welcome');
   });
 }
+
+// ── Sound toggle init ──
+(function() {
+  var btn = document.getElementById('sound-toggle');
+  btn.textContent = soundEnabled ? '🔊' : '🔇';
+  btn.addEventListener('click', function() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('mathblaster-sound', String(soundEnabled));
+    btn.textContent = soundEnabled ? '🔊' : '🔇';
+    if (!soundEnabled) SoundEngine.stopBossHeartbeat();
+    ensureAudioContext();
+  });
+})();
 
 loadWelcomeScreen();
 showScreen('welcome');
