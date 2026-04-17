@@ -1003,6 +1003,7 @@ function startGame() {
   resetState();
   dom.questionPanel.classList.remove('boss-mode');
   document.body.classList.remove('boss-bg');
+  SoundEngine.stopBossHeartbeat();
   showScreen('game');
   updateHUD();
   renderQuestion();
@@ -1028,6 +1029,7 @@ function endRound() {
   state.fastAnswers = 0;
   dom.questionPanel.classList.add('boss-mode');
   document.body.classList.add('boss-bg');
+  SoundEngine.playBossHeartbeat();
   renderQuestion();
 }
 
@@ -1046,6 +1048,7 @@ function endBoss() {
 function gameOver() {
   stopTimer();
   document.body.classList.remove('boss-bg');
+  SoundEngine.stopBossHeartbeat();
   applyXP();
   showScreen('gameover');
   document.getElementById('go-score').textContent = state.score;
@@ -1072,6 +1075,7 @@ function applyXP() {
 
 function showResultScreen() {
   document.body.classList.remove('boss-bg');
+  SoundEngine.stopBossHeartbeat();
   var levelResult = applyXP();
   var progress = loadProgress();
 
