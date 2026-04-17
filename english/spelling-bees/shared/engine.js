@@ -1403,6 +1403,8 @@ var SpellingBeeEngine = (function () {
     function initWordList() {
         if (!dom.wordCardsGrid || !dom.headerDesc) return;
         if (!config.translations || Object.keys(config.translations).length === 0) return;
+        if (dom.headerDesc.dataset.wordListInit) return;
+        dom.headerDesc.dataset.wordListInit = "1";
 
         renderWordCards();
 
