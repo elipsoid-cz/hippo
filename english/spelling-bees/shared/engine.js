@@ -777,32 +777,7 @@ var SpellingBeeEngine = (function () {
     function generateHint(correctWord, userInput, attemptNum) {
         var html = "";
 
-        if (attemptNum === 1) {
-            // First wrong: show length, first letter of each word, and blank letter blocks
-            html += '<div class="hint-container">';
-            var words = correctWord.split(" ");
-            for (var wi = 0; wi < words.length; wi++) {
-                if (wi > 0) {
-                    html += '<span class="hint-word-gap"></span>';
-                }
-                html += '<span class="hint-word">';
-                for (var ci = 0; ci < words[wi].length; ci++) {
-                    var ch = words[wi][ci];
-                    if (!/[a-zA-Z]/.test(ch)) {
-                        html += '<span class="hint-letter hint-space">' + ch + '</span>';
-                    } else if (ci === 0 || !/[a-zA-Z]/.test(words[wi].slice(0, ci))) {
-                        html += '<span class="hint-letter hint-correct">' + ch.toUpperCase() + '</span>';
-                    } else {
-                        html += '<span class="hint-letter hint-blank">?</span>';
-                    }
-                }
-                html += '</span>';
-            }
-            html += "</div>";
-        } else {
-            // Second wrong: letter-by-letter colored feedback
-            html += generateLetterFeedback(correctWord, userInput);
-        }
+        html += generateLetterFeedback(correctWord, userInput);
 
         html +=
             '<div class="attempts-info">Try again! (' +
