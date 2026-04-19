@@ -2635,6 +2635,7 @@ async function _regenerateSingleWord(setId, word) {
             if (labels[status]) _updateAudioModalStatusText(icons[status] || '⏳', labels[status]);
         },
         onSuccess(runId) {
+            localStorage.setItem('hippo-audio-bust', Date.now());
             const link = `<a href="${_ghRunUrl(runId)}" target="_blank" style="color:inherit;text-decoration:underline;">Zobrazit na GitHubu</a>`;
             btn.disabled = false;
             btn.textContent = '🔊 Vygenerovat znovu';

@@ -716,7 +716,9 @@ var SpellingBeeEngine = (function () {
     function preloadAudio() {
         if (!config.audioPath && !config.audioPathMap) return;
         audioCache = {};
-        var bust = '?v=' + Math.floor(Date.now() / 86400000); // daily cache bust
+        var stored = parseInt(localStorage.getItem('hippo-audio-bust') || '0');
+        var hourly = Math.floor(Date.now() / 3600000) * 3600000;
+        var bust = '?v=' + Math.max(stored, hourly); // hourly bust, or immediate after admin regen
         config.words.forEach(function (word) {
             var basePath = config.audioPath || (config.audioPathMap && config.audioPathMap[word]);
             if (!basePath) return; // toto slovo nemá audio
