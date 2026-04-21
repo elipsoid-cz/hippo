@@ -388,10 +388,31 @@
       line-height: 1;
     }
     #sound-toggle:hover { background: #1a0533cc; border-color: #ff6bff88; }
+
+    /* ── Back links ── */
+    .back-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      background: none;
+      border: none;
+      padding: 0;
+      color: #999;
+      text-decoration: none;
+      font-size: 0.875em;
+      font-family: 'Courier New', Courier, monospace;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #ccc; }
   </style>
 </head>
 <body>
   <button id="sound-toggle" type="button" title="Zvuk zapnout/vypnout">🔊</button>
+  <a id="btn-back-math" class="back-link" style="display:none" href="../">← MATH</a>
+  <button id="btn-quit-game" class="back-link" style="display:none" type="button">✕ OPUSTIT</button>
 
   <!-- Flash overlay -->
   <div class="flash" id="flash"></div>
@@ -810,6 +831,8 @@ function showScreen(name) {
     dom.screens[k].classList.remove('active');
   });
   dom.screens[name].classList.add('active');
+  document.getElementById('btn-quit-game').style.display = (name === 'game') ? 'block' : 'none';
+  document.getElementById('btn-back-math').style.display = (name === 'welcome') ? 'inline' : 'none';
 }
 
 // ══════════════════════════
@@ -1185,6 +1208,14 @@ document.getElementById('btn-play-again').onclick = function() {
 };
 document.getElementById('btn-back-home').onclick = function() { showScreen('welcome'); loadWelcomeScreen(); };
 document.getElementById('btn-go-home').onclick   = function() { showScreen('welcome'); loadWelcomeScreen(); };
+document.getElementById('btn-quit-game').onclick = function() {
+  stopTimer();
+  resetState();
+  dom.questionPanel.classList.remove('boss-mode');
+  document.body.classList.remove('boss-bg');
+  showScreen('welcome');
+  loadWelcomeScreen();
+};
 
 // ══════════════════════════
 //  FIREBASE
