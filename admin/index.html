@@ -2323,8 +2323,7 @@ let _adminAudio = null;
 
 function _playAdminWord(setId, word) {
     if (_adminAudio) { _adminAudio.pause(); _adminAudio = null; }
-    const bust = localStorage.getItem('hippo-audio-bust') || Math.floor(Date.now() / 3600000) * 3600000;
-    const src = `../english/spelling-bees/${setId}/audio/${_wordToAudioFilename(word)}?v=${bust}`;
+    const src = `../english/spelling-bees/${setId}/audio/${_wordToAudioFilename(word)}?v=${Date.now()}`;
     _adminAudio = new Audio(src);
     _adminAudio.play();
 }

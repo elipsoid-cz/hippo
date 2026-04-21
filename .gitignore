@@ -22,6 +22,9 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Dependencies
+node_modules/
+
 # Environment / secrets
 .env
 
