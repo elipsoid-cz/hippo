@@ -30,23 +30,22 @@ Pak bumpni verzi v `index.html` — najdi `<small>vX.Y.Z</small>` a uprav čísl
 
 ### 4. Sestav commit message
 
-Navrhni commit message v češtině na základě změn. Ukáži ji uživateli ke schválení.
+Vygeneruj commit message v češtině na základě změn.
 Formát: `feat:` / `fix:` / `chore:` + stručný popis.
 
-Počkej na potvrzení nebo úpravu.
+Zprávu zobraz, ale nečekej na schválení — použij ji přímo.
+Výjimka: pokud uživatel explicitně řekne, ať se zeptám.
 
 ### 5. Commitni
 
 ```bash
 git add -A
-git commit -m "<schválená zpráva>"
+git commit -m "<vygenerovaná zpráva>"
 ```
 
-### 6. Potvrď push
+### 6. Push
 
-Zobraz: `Pushnu na GitHub (main)?` a počkej na souhlas.
-
-Po souhlasu:
+Pushni přímo bez dotazu:
 ```bash
 git push origin main
 ```
