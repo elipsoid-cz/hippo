@@ -243,6 +243,28 @@
     }
     .answer-btn:disabled { cursor: default; }
 
+    .keyboard-answer-input {
+      width: 100%;
+      padding: 10px;
+      background: #111128;
+      border: 2px solid #333355;
+      border-radius: 8px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1.4em;
+      text-align: center;
+      letter-spacing: 2px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .keyboard-answer-input:focus {
+      outline: none;
+      border-color: #00ffff;
+      box-shadow: 0 0 8px #00ffff44;
+      caret-color: transparent;
+    }
+    .keyboard-answer-input:disabled { opacity: 0.35; cursor: default; }
+    .keyboard-answer-input::placeholder { font-size: 0.6em; letter-spacing: 1px; color: #888; }
+
     .score-row {
       display: flex;
       justify-content: space-between;
@@ -429,6 +451,8 @@
       <div class="answer-grid" id="answer-grid">
         <!-- tlačítka generovány JS -->
       </div>
+      <input type="text" id="keyboard-answer" class="keyboard-answer-input"
+        placeholder="nebo napiš číslo + Enter" inputmode="numeric" autocomplete="off" />
     </div>
 
     <div class="score-row">
@@ -772,6 +796,7 @@ var dom = {
   questionPanel:   document.getElementById('question-panel'),
   questionText:    document.getElementById('question-text'),
   answerGrid:      document.getElementById('answer-grid'),
+  keyboardAnswer:  document.getElementById('keyboard-answer'),
   scoreDisplay:    document.getElementById('score-display'),
   comboDisplay:    document.getElementById('combo-display'),
   flash:           document.getElementById('flash'),
@@ -877,6 +902,10 @@ function renderQuestion() {
     dom.answerGrid.appendChild(btn);
   });
 
+  dom.keyboardAnswer.value = '';
+  dom.keyboardAnswer.disabled = false;
+  dom.keyboardAnswer.focus();
+
   var timerSeconds = state.isBoss ? TIMER_BOSS : TIMER_NORMAL;
   startTimer(timerSeconds);
 }
@@ -913,6 +942,7 @@ function handleAnswer(chosen) {
 
   var elapsed = (Date.now() - questionStartTime) / 1000;
   var isCorrect = chosen !== null && chosen === currentQuestion.correct;
+  dom.keyboardAnswer.disabled = true;
   var buttons = dom.answerGrid.querySelectorAll('.answer-btn');
 
   buttons.forEach(function(btn) {
@@ -1128,6 +1158,19 @@ function showResultScreen() {
 // ══════════════════════════
 //  TLAČÍTKA
 // ══════════════════════════
+dom.keyboardAnswer.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var val = parseInt(dom.keyboardAnswer.value, 10);
+    if (!isNaN(val) && dom.keyboardAnswer.value.trim() !== '') {
+      handleAnswer(val);
+    }
+    return;
+  }
+  if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+
 document.getElementById('btn-start').onclick = startGame;
 document.getElementById('nickname-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') startGame();
