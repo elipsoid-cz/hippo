@@ -407,6 +407,18 @@
       transition: color 0.2s;
     }
     .back-link:hover { color: #ccc; }
+
+    @media (min-width: 640px) {
+      body { justify-content: center; padding: 48px 24px; }
+      .screen { max-width: 620px; }
+      .neon-title { font-size: 2.8em; }
+      .question-text { font-size: 4em; }
+      .answer-btn { padding: 28px 0; font-size: 2.4em; }
+      .question-panel { padding: 24px 20px 20px; gap: 20px; }
+      .screen.active { gap: 16px; }
+      .keyboard-answer-input { font-size: 1.6em; padding: 14px; }
+      .btn { padding: 18px; font-size: 1.1em; }
+    }
   </style>
 </head>
 <body>
