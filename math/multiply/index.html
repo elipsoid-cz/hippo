@@ -111,6 +111,7 @@
     }
     .lb-row {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       padding: 4px 0;
       font-size: 0.875em;
@@ -121,7 +122,31 @@
     .lb-rank { width: 28px; color: #aaa; }
     .lb-name { flex: 1; }
     .lb-score { color: #ffff00; }
+    .lb-streak { color: #ff9900; min-width: 44px; text-align: right; font-size: 0.875em; }
     .lb-empty { color: #aaa; font-size: 0.875em; text-align: center; padding: 8px 0; }
+    .lb-row { cursor: pointer; }
+    .lb-attempts {
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 0 4px 28px;
+      border-bottom: 1px solid #ffffff0a;
+    }
+    .lb-attempts.open { display: flex; }
+    .lb-attempt-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.82em;
+      font-family: system-ui, sans-serif;
+      letter-spacing: 0;
+      color: #aaa;
+      padding: 2px 0;
+    }
+    .lb-attempt-score { color: #ffff00; min-width: 36px; }
+    .lb-attempt-streak { color: #ff9900; min-width: 36px; }
+    .lb-attempt-stats { color: #666; }
+    .lb-attempt-date { color: #444; margin-left: auto; }
 
     /* ── Game screen ── */
     .hud {
@@ -1290,20 +1315,50 @@ function submitScore(nickname, callback) {
   var ref = db.collection(COLLECTION).doc(key);
   ref.get().then(function(doc) {
     var existing = doc.exists ? doc.data() : null;
-    if (!existing || state.score > (existing.score || 0)) {
-      return ref.set({
-        nickname: nickname,
-        score:    state.score,
-        level:    progress.level,
-        date:     new Date().toISOString()
-      });
+    var scoreImproved = !existing || state.score > (existing.score || 0);
+    var streakImproved = state.maxStreak > (existing && existing.bestStreak || 0);
+    var writes = [];
+    if (scoreImproved) {
+      writes.push(ref.set({
+        nickname:    nickname,
+        score:       state.score,
+        level:       progress.level,
+        bestStreak:  Math.max(state.maxStreak, existing && existing.bestStreak || 0),
+        date:        new Date().toISOString()
+      }));
+    } else if (streakImproved) {
+      writes.push(ref.update({ bestStreak: state.maxStreak }));
     }
+    writes.push(ref.collection('attempts').add({
+      score:     state.score,
+      correct:   state.correct,
+      wrong:     state.wrong,
+      maxStreak: state.maxStreak,
+      date:      new Date().toISOString()
+    }));
+    return Promise.all(writes);
   })
   .then(function() { if (callback) callback(); })
   .catch(function(err) {
     console.error('[MathBlaster] submitScore error:', err);
     if (callback) callback();
   });
+}
+
+function loadAttempts(nicknameKey, callback) {
+  db.collection(COLLECTION).doc(nicknameKey)
+    .collection('attempts')
+    .get()
+    .then(function(snap) {
+      var attempts = [];
+      snap.forEach(function(doc) { attempts.push(doc.data()); });
+      attempts.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+      callback(attempts);
+    })
+    .catch(function(err) {
+      console.error('[MathBlaster] loadAttempts error:', err);
+      callback([]);
+    });
 }
 
 function renderLeaderboard(entries, currentNick, containerId) {
@@ -1316,13 +1371,49 @@ function renderLeaderboard(entries, currentNick, containerId) {
   }
   var medals = ['🥇', '🥈', '🥉'];
   entries.slice(0, 10).forEach(function(entry, i) {
+    var key = entry.nickname.toLowerCase().replace(/[^a-z0-9]/g, '');
     var row = document.createElement('div');
     row.className = 'lb-row' + (currentNick && entry.nickname.toLowerCase() === currentNick.toLowerCase() ? ' me' : '');
     row.innerHTML =
       '<span class="lb-rank">' + (medals[i] || (i + 1) + '.') + '</span>' +
       '<span class="lb-name">' + entry.nickname + '</span>' +
-      '<span class="lb-score">' + entry.score + '</span>';
+      '<span class="lb-score">' + entry.score + '</span>' +
+      '<span class="lb-streak">🔥' + (entry.bestStreak || 0) + '</span>';
+
+    var attemptsEl = document.createElement('div');
+    attemptsEl.className = 'lb-attempts';
+    var loaded = false;
+
+    row.addEventListener('click', function() {
+      var isOpen = attemptsEl.classList.contains('open');
+      if (isOpen) { attemptsEl.classList.remove('open'); return; }
+      attemptsEl.classList.add('open');
+      if (loaded) return;
+      attemptsEl.innerHTML = '<div class="lb-attempt-row" style="color:#555">načítám...</div>';
+      loadAttempts(key, function(attempts) {
+        loaded = true;
+        attemptsEl.innerHTML = '';
+        if (!attempts.length) {
+          attemptsEl.classList.remove('open');
+          return;
+        }
+        attempts.forEach(function(a) {
+          var d = new Date(a.date);
+          var dateStr = d.getDate() + '.' + (d.getMonth() + 1) + '. ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+          var el = document.createElement('div');
+          el.className = 'lb-attempt-row';
+          el.innerHTML =
+            '<span class="lb-attempt-score">' + a.score + '</span>' +
+            '<span class="lb-attempt-streak">🔥' + (a.maxStreak || 0) + '</span>' +
+            '<span class="lb-attempt-stats">' + a.correct + '✓ ' + a.wrong + '✗</span>' +
+            '<span class="lb-attempt-date">' + dateStr + '</span>';
+          attemptsEl.appendChild(el);
+        });
+      });
+    });
+
     container.appendChild(row);
+    container.appendChild(attemptsEl);
   });
 }
 
@@ -1335,11 +1426,20 @@ function renderSavePanelInto(panelId, lbContainerId) {
   var progress = loadProgress();
   var savedNick = progress.nickname;
 
+  if (savedNick) {
+    submitScore(savedNick, function() {
+      loadLeaderboard(function(entries) {
+        renderLeaderboard(entries, savedNick, lbContainerId);
+      });
+    });
+    return;
+  }
+
   panel.innerHTML =
     '<div style="background:#111128;border:1px solid #ff6bff33;border-radius:8px;padding:12px;margin-bottom:8px;">' +
     '<div style="color:#aaa;font-size:0.875em;letter-spacing:2px;margin-bottom:8px;">ULOŽIT SKÓRE?</div>' +
     '<div style="display:flex;gap:8px;">' +
-    '<input type="text" id="save-nick-' + panelId + '" class="nickname-input" placeholder="Tvoje jméno..." maxlength="15" value="' + savedNick.replace(/"/g, '&quot;') + '" />' +
+    '<input type="text" id="save-nick-' + panelId + '" class="nickname-input" placeholder="Tvoje jméno..." maxlength="15" />' +
     '<button class="btn" id="save-btn-' + panelId + '" style="flex:0 0 auto;padding:12px 16px;">Uložit</button>' +
     '</div></div>';
 
