@@ -358,6 +358,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-04-27": {
+        cover: true,
         title: "April 27",
         date: "2026-04-27",
         description: "Diverse English vocabulary words",
