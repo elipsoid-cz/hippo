@@ -357,6 +357,35 @@ var SPELLING_BEE_SETS = {
             "location": "Poloha",
         },
     },
+    "2026-04-27": {
+        title: "April 27",
+        date: "2026-04-27",
+        description: "Diverse English vocabulary words",
+        words: [
+            "Regret",
+            "Happiness",
+            "Umbrella",
+            "Through",
+            "Liberty",
+            "Freedom",
+            "Brooklyn",
+            "Thousand",
+            "Poem",
+            "Road",
+        ],
+        translations: {
+            "regret": "Lítost",
+            "happiness": "Štěstí",
+            "umbrella": "Deštník",
+            "through": "Skrz / procházet něčím",
+            "liberty": "Svoboda",
+            "freedom": "Volnost",
+            "brooklyn": "Městská část v New Yorku",
+            "thousand": "Tisíc",
+            "poem": "Báseň",
+            "road": "Cesta",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
