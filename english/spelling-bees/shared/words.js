@@ -420,6 +420,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-05-11": {
+        audio: true,
         cover: true,
         title: "May 11",
         date: "2026-05-11",
