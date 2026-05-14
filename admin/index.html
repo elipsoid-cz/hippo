@@ -1453,10 +1453,17 @@ function onDateChange() {
 //  Words textarea (nový set)
 // ══════════════════════════════════════════════════════════
 function parseWordsTextarea(text) {
+    if (/^\s*\d+[).]\s/.test(text)) {
+        return text.split(/\s*\d+[).]\s*/)
+            .map(w => w.replace(/,\s*$/, '').trim())
+            .map(w => w.replace(/\s*\([^)]*\)/g, '').trim())
+            .map(w => w.replace(/\.$/, ''))
+            .filter(Boolean);
+    }
     return text.split(/[\s,]+/)
         .map(w => w.trim())
-        .filter(w => w && !/^\d+[).:]?$/.test(w))  // strip numbered list tokens like "1)", "2."
-        .map(w => w.replace(/\.$/, ''));             // strip trailing period (e.g. "Athletics.")
+        .filter(w => w && !/^\d+[).:]?$/.test(w))
+        .map(w => w.replace(/\.$/, ''));
 }
 
 function onWordsTextareaInput() {
