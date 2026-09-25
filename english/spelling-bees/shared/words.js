@@ -513,6 +513,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-09-28": {
+        cover: true,
         audio: true,
         title: "Mid-October Test",
         date: "2026-09-28",
