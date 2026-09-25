@@ -24,7 +24,7 @@ Hippo 🦛 — webová app pro výuku: anglické jazykové cvičení a matematic
 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — patch = bugfix, minor = feature, major = zásadní změna
-- Aktuální: **v1.12.0**
+- Aktuální: **v1.12.1**
 - **DŮLEŽITÉ:** Vždy bumkuj verzi v `index.html` s každým commitem (výjimka: čistě math commity)
 
 ## Placená API volání

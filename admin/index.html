@@ -1461,6 +1461,12 @@ function parseWordsTextarea(text) {
             .map(w => w.replace(/\.$/, ''))
             .filter(Boolean);
     }
+    // obsahuje čárku → oddělovač je čárka (případně nový řádek), víceslovné fráze zůstávají ("to wager, a deck")
+    if (text.includes(',')) {
+        return text.split(/\s*[,\n]\s*/)
+            .map(w => w.trim().replace(/\s+/g, ' ').replace(/\.$/, ''))
+            .filter(Boolean);
+    }
     return text.split(/[\s,]+/)
         .map(w => w.trim())
         .filter(w => w && !/^\d+[).:]?$/.test(w))
