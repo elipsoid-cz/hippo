@@ -25,7 +25,7 @@ jobs:
         run: npm install
 
       - name: Install ImageMagick (thumbnail fallback for Linux)
-        run: sudo apt-get install -y imagemagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
 
       - name: Generate cover
         run: node scripts/generate-covers.js --set "${{ inputs.set_id }}"
