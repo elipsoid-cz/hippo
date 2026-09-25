@@ -8,6 +8,12 @@ on:
         required: true
         type: string
 
+# Druhé spuštění pro stejný set počká na doběhnutí prvního (žádné souběžné
+# generování ani závod při push)
+concurrency:
+  group: generate-cover-${{ inputs.set_id }}
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest

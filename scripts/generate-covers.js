@@ -73,6 +73,28 @@ function markCoverInWordsJs(setId) {
     fs.writeFileSync(WORDS_JS, content, 'utf8');
 }
 
+// --- Retry při síťové chybě -------------------------------------------------
+// Opakuje jen když request nedostal žádnou odpověď ("fetch failed", bez HTTP
+// statusu). HTTP chyby (4xx/5xx) se neopakují — mohly by být zpoplatněné.
+const MAX_RETRIES    = 2;
+const RETRY_DELAY_MS = 10000;
+
+function isNetworkError(err) {
+    return !err.status && /fetch failed/i.test(err.message || '');
+}
+
+async function generateWithRetry(model, prompt) {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await model.generateContent(prompt);
+        } catch (err) {
+            if (attempt >= MAX_RETRIES || !isNetworkError(err)) throw err;
+            console.warn(`  Síťová chyba (${err.message}), opakuji za ${RETRY_DELAY_MS / 1000} s (${attempt + 1}/${MAX_RETRIES})...`);
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        }
+    }
+}
+
 // --- Generování jednoho obrázku ---------------------------------------------
 async function generateCover(setId, set, genAI) {
     const outDir  = path.join(SETS_DIR, setId);
@@ -91,7 +113,7 @@ async function generateCover(setId, set, genAI) {
         generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
     });
 
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(model, prompt);
     const parts  = result.response.candidates[0].content.parts;
     const imgPart = parts.find(p => p.inlineData);
 
