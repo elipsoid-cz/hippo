@@ -513,6 +513,7 @@ var SPELLING_BEE_SETS = {
         },
     },
     "2026-09-28": {
+        audio: true,
         title: "September 28",
         date: "2026-09-28",
         description: "Actions, Permissions, and States",
