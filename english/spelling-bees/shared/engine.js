@@ -27,6 +27,7 @@ var SpellingBeeEngine = (function () {
         streak: 0,
         bestStreak: 0,
         totalAttempts: 0,
+        wrongAttempts: 0,
         sessionMistakes: [],
         isReviewingError: false,
         mode: "all",
@@ -249,6 +250,7 @@ var SpellingBeeEngine = (function () {
             score: state.score,
             total: state.currentWords.length,
             totalAttempts: state.totalAttempts,
+            wrongAttempts: state.wrongAttempts,
             bestStreak: state.bestStreak,
             date: new Date().toISOString()
         };
@@ -270,13 +272,16 @@ var SpellingBeeEngine = (function () {
             }
             docRef.set(newData).then(function () {
                 if (callback) callback();
-            }).catch(function () {
+            }).catch(function (err) {
+                console.error("[Hippo]", err);
                 if (callback) callback();
             });
-        }).catch(function () {
+        }).catch(function (err) {
+            console.error("[Hippo]", err);
             docRef.set(newData).then(function () {
                 if (callback) callback();
-            }).catch(function () {
+            }).catch(function (err2) {
+                console.error("[Hippo]", err2);
                 if (callback) callback();
             });
         });
@@ -528,7 +533,9 @@ var SpellingBeeEngine = (function () {
                 }
                 var rank = displayRank <= 3 ? medalEmoji[displayRank - 1] : displayRank + ".";
                 var pct = Math.round((entry.score / entry.total) * 100);
-                var mistakes = (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
+                // wrongAttempts = přesný počet chyb; starší záznamy ho nemají → odhad z totalAttempts
+                var mistakes = (entry.wrongAttempts != null) ? entry.wrongAttempts
+                    : (entry.totalAttempts != null) ? (entry.totalAttempts - entry.total) : null;
                 var extraHtml;
                 if (pct === 100) {
                     extraHtml = '<span class="lb-perfect-label">\uD83C\uDFAF Perfect!</span>';
@@ -752,7 +759,7 @@ var SpellingBeeEngine = (function () {
 
         var basePath = config.audioPath || (config.audioPathMap && config.audioPathMap[text]);
         if (!basePath) {
-            speakViaTTS(text, slow);
+            speakViaTTS(spokenForm(text), slow);
             return;
         }
 
@@ -764,7 +771,7 @@ var SpellingBeeEngine = (function () {
         audio.playbackRate = slow ? 0.65 : 1.0;
         audio.play().catch(function () {
             currentAudio = null;
-            speakViaTTS(text, slow); // fallback na TTS
+            speakViaTTS(spokenForm(text), slow); // fallback na TTS
         });
         audio.onended = function () {
             audio.playbackRate = 1.0; // reset pro příští přehrání z cache
@@ -779,7 +786,9 @@ var SpellingBeeEngine = (function () {
     function generateHint(correctWord, userInput, attemptNum) {
         var html = "";
 
-        html += generateLetterFeedback(correctWord, userInput);
+        html += correctWord.indexOf("(") !== -1
+            ? generateVariantFeedback(correctWord, userInput)
+            : generateLetterFeedback(correctWord, userInput);
 
         html +=
             '<div class="attempts-info">Try again! (' +
@@ -898,6 +907,45 @@ var SpellingBeeEngine = (function () {
         return html;
     }
 
+    // Nápověda pro slova s volitelnými písmeny: vždy ukazuje celý vzor
+    // ("favo(u)r"), volitelná políčka jsou čárkovaná. Zelená/červená se
+    // počítá proti variantě nejbližší vstupu, ale žádná varianta se nevnucuje.
+    function generateVariantFeedback(word, input) {
+        var p = parsePattern(word);
+        var iNorm = normalize(input || "");
+        var best = null, bestOps = null, bestDist = Infinity;
+        variantIndices(p).forEach(function (idx) {
+            var v = normalize(idx.map(function (i) { return p.chars[i].ch; }).join(""));
+            var ops = alignStrings(v, iNorm);
+            var dist = ops.filter(function (op) { return op.type !== "match"; }).length;
+            if (dist < bestDist) { bestDist = dist; best = idx; bestOps = ops; }
+        });
+
+        var status = {}; // index do p.chars → "match" | "miss"
+        bestOps.forEach(function (op) {
+            if (op.type === "insert") return;
+            status[best[op.cIdx]] = op.type === "match" ? "match" : "miss";
+        });
+
+        var html = '<div class="hint-container">';
+        p.chars.forEach(function (c, i) {
+            var opt = c.group !== -1 ? " hint-optional" : "";
+            if (c.ch === " ") {
+                html += '<span class="hint-letter hint-space"></span>';
+            } else if (status[i] === "match") {
+                html += '<span class="hint-letter hint-correct' + opt + '">' + c.ch + "</span>";
+            } else if (status[i] === "miss") {
+                html += '<span class="hint-letter hint-wrong' + opt + '">_</span>';
+            } else {
+                // volitelné písmeno, které nejbližší varianta nemá
+                html += '<span class="hint-letter hint-blank' + opt + '">?</span>';
+            }
+        });
+        html += "</div>";
+        html += '<div class="hint-optional-note">Dashed box = optional letter (both spellings are OK)</div>';
+        return html;
+    }
+
     // =====================
     // Animations
     // =====================
@@ -998,6 +1046,52 @@ var SpellingBeeEngine = (function () {
             .replace(/[\u2018\u2019\u0060\u2032]/g, "'");
     }
 
+    // Volitelná písmena v závorkách: "favo(u)r" → písmena s číslem skupiny (-1 = povinné)
+    function parsePattern(word) {
+        var chars = [], group = -1, groups = 0;
+        for (var i = 0; i < word.length; i++) {
+            var c = word[i];
+            if (c === "(") { group = groups++; continue; }
+            if (c === ")") { group = -1; continue; }
+            chars.push({ ch: c, group: group });
+        }
+        return { chars: chars, groups: groups };
+    }
+
+    // Každá varianta = pole indexů do pattern.chars; první obsahuje všechna volitelná písmena
+    function variantIndices(pattern) {
+        var out = [];
+        for (var mask = 0; mask < (1 << pattern.groups); mask++) {
+            var idx = [];
+            pattern.chars.forEach(function (c, i) {
+                if (c.group === -1 || !(mask & (1 << c.group))) idx.push(i);
+            });
+            out.push(idx);
+        }
+        return out;
+    }
+
+    // "favo(u)r" → ["favour", "favor"]
+    function expandVariants(word) {
+        var p = parsePattern(word);
+        return variantIndices(p).map(function (idx) {
+            return idx.map(function (i) { return p.chars[i].ch; }).join("");
+        });
+    }
+
+    // Tvar pro výslovnost (TTS) — bez závorek
+    function spokenForm(word) {
+        return expandVariants(word)[0];
+    }
+
+    function matchesWord(word, input) {
+        var norm = normalize(input);
+        return expandVariants(word).some(function (v) {
+            return normalize(v) === norm;
+        });
+    }
+
+
     // Pick N words for a round: mistakes first, then unseen, then already-seen-clean.
     function selectWordsForRound(wordList) {
         if (config.wordsPerRound <= 0 || wordList.length <= config.wordsPerRound) {
@@ -1093,6 +1187,7 @@ var SpellingBeeEngine = (function () {
         state.streak = 0;
         state.bestStreak = 0;
         state.totalAttempts = 0;
+        state.wrongAttempts = 0;
         state.sessionMistakes = [];
         state.mode = mode || "all";
 
@@ -1134,13 +1229,15 @@ var SpellingBeeEngine = (function () {
     function checkWord() {
         if (dom.userInput.readOnly) return;
         var input = normalize(dom.userInput.value);
-        var correct = normalize(state.currentWords[state.currentIndex]);
         if (input === "") return;
 
         state.attempt++;
         state.totalAttempts++;
 
-        if (input === correct) {
+        var isCorrect = matchesWord(state.currentWords[state.currentIndex], input);
+        if (!isCorrect) state.wrongAttempts++;
+
+        if (isCorrect) {
             // CORRECT
             dom.userInput.readOnly = true;
             hide(dom.submitBtn);
@@ -1296,7 +1393,7 @@ var SpellingBeeEngine = (function () {
     }
 
     function updateScoreBar() {
-        var mistakes = state.totalAttempts - state.score;
+        var mistakes = state.wrongAttempts;
         var pct = Math.round(state.score / state.currentWords.length * 100);
         var parts = [
             "Word: " +

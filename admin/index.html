@@ -1456,7 +1456,8 @@ function parseWordsTextarea(text) {
     if (/^\s*\d+[).]\s/.test(text)) {
         return text.split(/\s*\d+[).]\s*/)
             .map(w => w.replace(/,\s*$/, '').trim())
-            .map(w => w.replace(/\s*\([^)]*\)/g, '').trim())
+            // poznámka " (…)" za mezerou pryč; "favo(u)r" (bez mezery) = varianta pravopisu, zůstává
+            .map(w => w.replace(/\s+\([^)]*\)/g, '').trim())
             .map(w => w.replace(/\.$/, ''))
             .filter(Boolean);
     }
@@ -1706,7 +1707,7 @@ function levenshtein(a, b) {
 }
 
 function translationTooSimilar(word, translation) {
-    const w = word.toLowerCase();
+    const w = word.toLowerCase().replace(/[()]/g, '');
     const parts = translation.toLowerCase().split(/[\/,]/).map(p => p.trim()).filter(Boolean);
     return parts.some(p => {
         const dist = levenshtein(w, p);
@@ -1716,7 +1717,7 @@ function translationTooSimilar(word, translation) {
 }
 
 function similarityScore(word, translation) {
-    const w = word.toLowerCase();
+    const w = word.toLowerCase().replace(/[()]/g, '');
     const parts = translation.toLowerCase().split(/[\/,]/).map(p => p.trim()).filter(Boolean);
     let best = 0;
     for (const p of parts) {

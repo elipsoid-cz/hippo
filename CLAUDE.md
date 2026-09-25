@@ -24,7 +24,7 @@ Hippo 🦛 — webová app pro výuku: anglické jazykové cvičení a matematic
 
 ## Verze (footer v index.html)
 - Formát: `vX.Y.Z` — patch = bugfix, minor = feature, major = zásadní změna
-- Aktuální: **v1.10.6**
+- Aktuální: **v1.12.0**
 - **DŮLEŽITÉ:** Vždy bumkuj verzi v `index.html` s každým commitem (výjimka: čistě math commity)
 
 ## Placená API volání
@@ -64,6 +64,11 @@ Pravidlo: pokud žák může z překladu foneticky odvodit anglický pravopis, p
 - Leaderboard schéma: `{ nickname, masteredCount, totalWords, date }` — **odlišné od běžných setů!**
   - Přepíše jen pokud masteredCount vzrostl; admin detekuje přes `s.masteredCount !== undefined`
 
+### Varianty pravopisu
+- Volitelná písmena v závorkách: `favo(u)r` → akceptuje `favour` i `favor` (`expandVariants()` v `engine.js`)
+- Klíč (překlady, mistakes, audio) zůstává `favo(u)r`; audio soubor `favour.wav`; TTS/Gemini vyslovuje tvar bez závorek
+- Nápověda (`generateVariantFeedback()`) ukazuje celý vzor; volitelná políčka jsou čárkovaná (`.hint-optional`), barvy se počítají proti variantě nejbližší vstupu
+
 ### Hint systém
 - 1. nápověda (po 1. chybě): políčka — první písmeno zelené, zbytek `?`, mezery zachovány
 - 2. nápověda (po 2. chybě): letter-by-letter feedback (zelená = správné, červená = špatné)
@@ -79,7 +84,7 @@ Pravidlo: pokud žák může z překladu foneticky odvodit anglický pravopis, p
 ## Leaderboard (Firebase Firestore)
 - Projekt: `hippo-cz` (free Spark tier); config: `FIREBASE_CONFIG` v `words.js`
 - Struktura: `leaderboards/{setId}/scores/{nicknameKey}`
-- Schéma: `{ nickname, score, total, totalAttempts, bestStreak, date }`
+- Schéma: `{ nickname, score, total, totalAttempts, wrongAttempts, bestStreak, date }` (`wrongAttempts` = přesný počet chyb; starší záznamy ho nemají → zobrazí se `totalAttempts - total`)
 - Ranking: score% desc → totalAttempts asc → bestStreak desc → date asc
 - Nové skóre přepíše jen pokud je lepší; nickname z localStorage, ptá se až na final screen
 - Practice Mistakes mode: leaderboard se nezobrazuje, skóre se neukládá (`state.mode !== "all"`)
@@ -87,7 +92,7 @@ Pravidlo: pokud žák může z překladu foneticky odvodit anglický pravopis, p
 
 ### Firestore Security Rules
 - Spravovány **pouze ve Firebase Console** (nejsou v gitu); při změně schématu vždy zkontrolovat
-- Povolená schémata: normální `{ nickname, score, total, ... }` + tournament `{ nickname, masteredCount, totalWords, date }`
+- Povolená schémata: normální `{ nickname, score, total, totalAttempts, wrongAttempts, bestStreak, date }` + tournament `{ nickname, masteredCount, totalWords, date }`
 - **Pravidlo:** každý `.catch()` v Firebase musí logovat: `.catch(function(err) { console.error("[Hippo]", err); })`
 - `loadLeaderboard` řadí client-side (bez `orderBy` na Firestore — odolné vůči chybějícím polím)
 

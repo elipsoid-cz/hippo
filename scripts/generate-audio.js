@@ -153,7 +153,8 @@ async function generateAudioForSet(setId, set, apiKey, force, voice, wordFilter)
             try {
                 if (attempt === 1) console.log(`  🔊 ${word}...`);
                 else console.log(`  ⟳  ${word}: pokus ${attempt}...`);
-                const wavBuffer = await generateAudio(word, apiKey, voice);
+                // "favo(u)r" → vyslovit "favour"
+                const wavBuffer = await generateAudio(word.replace(/[()]/g, ''), apiKey, voice);
                 fs.writeFileSync(outPath, wavBuffer);
                 const sizeKb = Math.round(fs.statSync(outPath).size / 1024);
                 console.log(`  ✓  ${word} → ${filename} (${sizeKb} KB)`);
