@@ -512,6 +512,37 @@ var SPELLING_BEE_SETS = {
             "lightbulb": "žárovka",
         },
     },
+    "2026-09-28": {
+        title: "September 28",
+        date: "2026-09-28",
+        description: "Actions, Permissions, and States",
+        words: [
+            "To wager",
+            "To bet",
+            "A deck",
+            "To accompany",
+            "To allow",
+            "To permit",
+            "To persuade",
+            "To convince",
+            "A favo(u)r",
+            "Available",
+            "To swoon",
+        ],
+        translations: {
+            "to wager": "uzavřít sázku",
+            "to bet": "vsadit se",
+            "a deck": "paluba lodi",
+            "to accompany": "doprovodit někoho",
+            "to allow": "umožnit něco",
+            "to permit": "dát povolení",
+            "to persuade": "přemluvit někoho",
+            "to convince": "přesvědčit někoho",
+            "a favo(u)r": "projev laskavosti",
+            "available": "k dispozici",
+            "to swoon": "padnout do bezvědomí",
+        },
+    },
 };
 
 // Get all unique words across all sets (for tournament mode).
