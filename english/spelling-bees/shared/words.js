@@ -527,7 +527,7 @@ var SPELLING_BEE_SETS = {
             "To Permit",
             "To Persuade",
             "To Convince",
-            "A Favo(U)R",
+            "A Favo(u)r",
             "Available",
             "To Swoon",
             "To Approach",
