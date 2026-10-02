@@ -1688,7 +1688,7 @@ function onWordInput(input, idx) {
 function titleCaseInput(input) {
     if (input.value.trim()) {
         // Capitalize first letter of each word
-        input.value = input.value.replace(/\b\w/g, c => c.toUpperCase());
+        input.value = input.value.replace(/(^|\s)(\w)/g, (m, sp, c) => sp + c.toUpperCase());
     }
     checkSimilarity(parseInt(input.dataset.idx, 10));
 }
