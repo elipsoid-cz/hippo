@@ -541,6 +541,7 @@ var SPELLING_BEE_SETS = {
             "Extinct",
             "Creature",
             "Environment",
+            "Sightseeing",
         ],
         translations: {
             "to wager": "uzavřít sázku",
