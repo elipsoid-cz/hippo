@@ -597,6 +597,7 @@ var SPELLING_BEE_SETS = {
             "Sigh",
             "Relieved",
             "Carelessly",
+            "Moxie",
         ],
         translations: {
             "to book": "zamluvit, rezervovat",
@@ -621,6 +622,7 @@ var SPELLING_BEE_SETS = {
             "sigh": "povzdechnout si",
             "relieved": "ulevilo se",
             "carelessly": "neopatrně",
+            "moxie": "kuráž",
         },
     },
 };
