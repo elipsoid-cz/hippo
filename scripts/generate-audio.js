@@ -51,9 +51,11 @@ function wordToFilename(word) {
 }
 
 // --- Sestavení WAV bufferu z raw PCM ----------------------------------------
-// Gemini TTS vrací raw PCM (24kHz, 16-bit, mono) — přidáme WAV header
+// gemini-2.5 preview TTS vracel raw PCM (24kHz, 16-bit, mono) → přidáme WAV header.
+// gemini-3.8-flash-tts vrací rovnou hotový WAV (mimeType audio/wav) → beze změny.
 function buildWavBuffer(pcmBase64) {
     const pcm    = Buffer.from(pcmBase64, 'base64');
+    if (pcm.subarray(0, 4).toString('ascii') === 'RIFF') return pcm;
     const header = Buffer.alloc(44);
 
     header.write('RIFF', 0);
@@ -74,13 +76,17 @@ function buildWavBuffer(pcmBase64) {
 }
 
 // --- Volání Gemini TTS API --------------------------------------------------
+// gemini-2.5-flash-preview-tts Google vypíná 18. 12. 2026 → náhrada gemini-3.8-flash-tts
+const TTS_MODEL = 'gemini-3.8-flash-tts';
+
 async function generateAudio(word, apiKey, voice) {
-    const url  = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+    const url  = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${apiKey}`;
     const resp = await fetch(url, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-            contents: [{ parts: [{ text: `Say the English word "${word}" clearly.` }] }],
+            // gemini-3.8-flash-tts čte celý text doslova (i instrukci „Say the English word…“) → posíláme jen slovo
+            contents: [{ parts: [{ text: word }] }],
             generationConfig: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
@@ -170,7 +176,7 @@ async function generateAudioForSet(setId, set, apiKey, force, voice, wordFilter)
         }
         if (generated) ok++;
 
-        // Rate limiting: gemini-2.5-flash-tts free tier = 3 RPM → min 21 s mezi požadavky
+        // Rate limiting: TTS free tier byl 3 RPM (2.5 preview) → min 21 s mezi požadavky (u 3.8 neověřeno)
         if (i < wordsToProcess.length - 1) {
             await new Promise(r => setTimeout(r, 21000));
         }
