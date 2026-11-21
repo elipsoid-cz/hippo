@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Prep — 1 December</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="../../../favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../../favicon-16.png" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #f1c40f;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --accent: #8e44ad;
+            --muted: #64748b;
+        }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ede9fe 0%, #e0f2fe 50%, #fef3c7 100%);
+            min-height: 100vh;
+            padding: 20px 16px;
+            color: var(--secondary);
+        }
+        .breadcrumb { margin-bottom: 1rem; }
+        .breadcrumb a {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.6rem 1.1rem; background: white; color: var(--secondary);
+            text-decoration: none; border-radius: 25px; font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .breadcrumb a:hover { background: var(--primary); }
+        .container { max-width: 760px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 1.5rem; }
+        h1 { font-size: 2.2rem; margin-bottom: 0.3rem; }
+        .subtitle { color: var(--muted); font-size: 1.05rem; }
+        .countdown {
+            display: inline-block; margin-top: 0.8rem; padding: 0.4rem 1rem;
+            background: var(--accent); color: white; border-radius: 20px; font-weight: 700;
+        }
+        .card {
+            background: white; border-radius: 20px; padding: 26px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        .hidden { display: none !important; }
+
+        /* Menu */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .menu-btn {
+            text-align: left; background: white; border: 2px solid #e2e8f0; border-radius: 16px;
+            padding: 18px; cursor: pointer; font: inherit; color: inherit;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .menu-btn:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+        .menu-btn .icon { font-size: 2rem; }
+        .menu-btn .name { font-weight: 700; font-size: 1.15rem; margin: 0.3rem 0; }
+        .menu-btn .desc { color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+        .menu-btn .best { margin-top: 0.5rem; font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+        .menu-btn.full { border-color: var(--accent); background: #faf5ff; }
+        .menu-btn.mistakes { border-color: var(--error); background: #fff5f5; }
+        .menu-btn:disabled { opacity: 0.45; cursor: default; transform: none; box-shadow: none; }
+        .menu-title { font-size: 1.1rem; margin: 0 0 12px; }
+
+        /* Quiz */
+        .progress { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #94a3b8; font-size: 0.9rem; font-weight: 600; }
+        .bar { height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin-bottom: 22px; }
+        body.in-quiz .header { display: none; }
+        .bar-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+        .instruction { color: var(--muted); font-size: 0.95rem; margin-bottom: 8px; }
+        .question { font-size: 1.45rem; font-weight: 600; line-height: 1.45; margin-bottom: 20px; }
+        .question .blank { display: inline-block; min-width: 70px; border-bottom: 3px solid var(--accent); color: var(--accent); text-align: center; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .options.two { grid-template-columns: 1fr; }
+        .opt {
+            padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 14px; background: #f8fafc;
+            font: inherit; font-size: 1.1rem; cursor: pointer; text-align: left; color: inherit;
+        }
+        .opt:hover:not(:disabled) { border-color: var(--accent); background: #faf5ff; }
+        .opt .key { color: #94a3b8; font-weight: 700; margin-right: 6px; }
+        .opt.correct { border-color: var(--success); background: #d1fae5; }
+        .opt.wrong { border-color: var(--error); background: #fee2e2; }
+        .opt:disabled { cursor: default; }
+        .type-row { display: flex; gap: 10px; }
+        .type-input {
+            flex: 1; min-width: 0; padding: 14px 16px; font-size: 1.2rem; border: 2px solid #e2e8f0;
+            border-radius: 14px; font-family: inherit;
+        }
+        .type-input:focus { outline: none; border-color: var(--accent); }
+        .type-input.correct { border-color: var(--success); background: #d1fae5; }
+        .type-input.wrong { border-color: var(--error); background: #fee2e2; }
+        .btn {
+            padding: 14px 22px; border: none; border-radius: 14px; font: inherit; font-weight: 700;
+            font-size: 1.05rem; cursor: pointer; background: var(--accent); color: white;
+        }
+        .btn:hover { filter: brightness(1.08); }
+        .btn-light { background: #e2e8f0; color: var(--secondary); }
+        .feedback { margin-top: 20px; padding: 16px 18px; border-radius: 16px; line-height: 1.5; }
+        .feedback.ok { background: #dcfce7; --fb: #15803d; --fb-text: #14532d; }
+        .feedback.bad { background: #fee2e2; --fb: #dc2626; --fb-text: #991b1b; }
+        .feedback .verdict { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: var(--fb-text); }
+        .feedback .mark {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--fb); color: #fff; font-size: 0.95rem; line-height: 1;
+        }
+        .feedback .answer-row { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .feedback .label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #475569; }
+        .feedback .answer { font-weight: 700; color: #14532d; background: #fff; padding: 3px 12px; border-radius: 8px; }
+        .feedback .tip { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1); color: #1e293b; }
+        .feedback .tip .label { display: block; margin-bottom: 2px; }
+        .next-row { margin-top: 16px; text-align: right; }
+
+        /* Results */
+        .big-score { text-align: center; font-size: 3rem; font-weight: 800; color: var(--accent); }
+        .grade { text-align: center; color: var(--muted); margin-bottom: 18px; font-size: 1.1rem; }
+        .sec-scores { display: grid; gap: 8px; margin-bottom: 20px; }
+        .sec-score { display: flex; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border-radius: 10px; }
+        .review h3 { margin: 10px 0; }
+        .review-item { padding: 10px 0; border-bottom: 1px solid #eee; line-height: 1.45; }
+        .review-item .you { color: var(--error); text-decoration: line-through; }
+        .review-item .right { color: var(--success); font-weight: 700; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+
+        .rules summary { cursor: pointer; font-weight: 700; font-size: 1.1rem; }
+        .rules h4 { margin: 16px 0 6px; color: var(--accent); }
+        .rules p, .rules li { line-height: 1.55; color: #334155; }
+        .rules ul { padding-left: 1.2rem; }
+        .rules table { border-collapse: collapse; width: 100%; margin-top: 6px; font-size: 0.95rem; }
+        .rules td, .rules th { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+        .rules th { background: #f8fafc; }
+
+        @media (max-width: 520px) {
+            h1 { font-size: 1.7rem; }
+            .question { font-size: 1.2rem; }
+            .options { grid-template-columns: 1fr; }
+            .card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="breadcrumb"><a href="../../../">← Back</a></div>
+
+    <div class="header">
+        <h1>📝 Test Prep</h1>
+        <div class="subtitle">Present perfect &amp; past simple · much / many / enough · irregular verbs</div>
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <!-- MENU -->
+    <div id="menu">
+        <div class="card">
+            <h2 class="menu-title">Choose a practice</h2>
+            <div class="menu-grid" id="menu-grid"></div>
+        </div>
+
+        <div class="card">
+            <details class="rules">
+                <summary>Grammar rules</summary>
+
+                <h4>much / many / enough</h4>
+                <ul>
+                    <li><b>many</b> + things you can count: <i>many apples, many people, many questions</i></li>
+                    <li><b>much</b> + things you can't count: <i>much milk, much time, much money, much homework</i></li>
+                    <li><b>too many / too much</b> = more than is good</li>
+                    <li><b>enough</b> = as much as you need · <b>not enough</b> = less than you need</li>
+                    <li>Watch out: <b>enough</b> goes <u>after</u> an adjective: <i>tall enough</i>, but <u>before</u> a noun: <i>enough money</i></li>
+                </ul>
+
+                <h4>Past simple</h4>
+                <ul>
+                    <li>Statement: <i>I <b>played</b>, I <b>went</b></i> (regular verbs add -ed, irregular verbs you have to learn)</li>
+                    <li>Question: <b>Did</b> + base form: <i>Did you <b>cook</b> yesterday?</i></li>
+                    <li>Negative: <b>didn't</b> + base form: <i>I didn't <b>swim</b> yesterday.</i></li>
+                    <li>After <b>did / didn't</b>, never use <i>went, swam, found</i>!</li>
+                </ul>
+
+                <h4>Present perfect</h4>
+                <ul>
+                    <li><b>have / has</b> + past participle (3rd form): <i>I <b>have seen</b>, she <b>has eaten</b></i></li>
+                    <li>he / she / it → <b>has</b>, everyone else → <b>have</b></li>
+                    <li>Negative: <i>I <b>haven't</b> finished</i> · Question: <i><b>Have</b> you <b>ever</b> been…?</i></li>
+                </ul>
+
+                <h4>Present perfect or past simple?</h4>
+                <table>
+                    <tr><th>Past simple (we say when)</th><th>Present perfect (when is not important)</th></tr>
+                    <tr><td>yesterday, last week, last summer, two days <b>ago</b>, in 2020, when…?</td>
+                        <td>ever, never, already, yet, just, since, for</td></tr>
+                    <tr><td><i>I <b>went</b> to London last summer.</i></td><td><i>I <b>have been</b> to London.</i></td></tr>
+                </table>
+                <p style="margin-top:8px">“Have you ever…?” is present perfect. When you say <b>when</b> it happened, switch to past simple: <i>Yes, I <b>went</b> there last summer.</i></p>
+
+                <h4>Irregular verbs</h4>
+                <table id="verb-table"></table>
+            </details>
+        </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quiz" class="card hidden">
+        <div class="progress">
+            <span id="q-section"></span>
+            <span id="q-count"></span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="q-bar"></div></div>
+        <div class="instruction" id="q-instr"></div>
+        <div class="question" id="q-text"></div>
+        <div id="q-answer"></div>
+        <div id="q-feedback"></div>
+        <div class="next-row hidden" id="next-row"><button class="btn" id="next-btn">Next →</button></div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results" class="card hidden">
+        <div class="big-score" id="r-score"></div>
+        <div class="grade" id="r-grade"></div>
+        <div class="sec-scores" id="r-sections"></div>
+        <div class="review" id="r-review"></div>
+        <div class="actions">
+            <button class="btn" id="r-again">Try again</button>
+            <button class="btn" id="r-mistakes" style="background:var(--error)">Practice mistakes</button>
+            <button class="btn btn-light" id="r-menu">Menu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var TEST_DATE = new Date(2026, 11, 1); // 1. 12. 2026
+    var MISTAKES_KEY = 'hippo-test-2026-12-01-mistakes';
+    var BEST_KEY = 'hippo-test-2026-12-01-best';
+
+    // ── Slovesa: [základ, past simple, past participle] ──────────────
+    var VERBS = [
+        ['go', 'went', 'gone'], ['put', 'put', 'put'], ['spend', 'spent', 'spent'],
+        ['run', 'ran', 'run'], ['read', 'read', 'read'], ['make', 'made', 'made'],
+        ['meet', 'met', 'met'], ['fall', 'fell', 'fallen'], ['find', 'found', 'found'],
+        ['take', 'took', 'taken'], ['see', 'saw', 'seen'], ['eat', 'ate', 'eaten'],
+        ['buy', 'bought', 'bought'], ['write', 'wrote', 'written'], ['swim', 'swam', 'swum'],
+        ['come', 'came', 'come'], ['give', 'gave', 'given'], ['drink', 'drank', 'drunk'],
+        ['sleep', 'slept', 'slept'], ['have', 'had', 'had'], ['do', 'did', 'done'],
+        ['get', 'got', 'got'], ['say', 'said', 'said'], ['think', 'thought', 'thought'],
+        ['be', 'was / were', 'been'], ['break', 'broke', 'broken'], ['forget', 'forgot', 'forgotten'],
+        ['fly', 'flew', 'flown'], ['lose', 'lost', 'lost'], ['win', 'won', 'won'],
+        ['know', 'knew', 'known'], ['bring', 'brought', 'brought'], ['teach', 'taught', 'taught'],
+        ['tell', 'told', 'told'], ['leave', 'left', 'left'], ['ride', 'rode', 'ridden']
+    ];
+    // Slovesa z minulého testu (sekce 3)
+    var OLD_VERBS = ['go', 'put', 'spend', 'run', 'read', 'make', 'meet', 'fall', 'find', 'take'];
+
+    var SECTIONS = {
+        A: { name: 'much / many / enough', icon: '🥛', desc: 'Countable or uncountable? Too much, too many, enough, not enough.' },
+        B: { name: 'Past simple', icon: '⏮️', desc: 'Irregular verbs, questions with did, negatives with didn\'t.' },
+        C: { name: 'Present perfect', icon: '✅', desc: 'have / has + 3rd form. ever, never, already, yet, just.' },
+        D: { name: 'Present perfect or past simple?', icon: '⚖️', desc: 'yesterday, ago, last week… or ever, never, yet?' }
+    };
+
+    var MMO = ['too many', 'too much', 'enough', 'not enough'];
+    var TIP_U = 'is uncountable → <b>much</b>';
+    var TIP_C = 'is countable → <b>many</b>';
+
+    // ── Otázky ──────────────────────────────────────────────────────
+    // type: choice (opts, a = index) | type (a = pole přijatelných odpovědí)
+    var Q = [
+        // A — z minulého testu
+        { id: 'a1', s: 'A', old: true, q: 'I don\'t have ___ money for this toy.', opts: MMO, a: 2, tip: 'The sentence is already negative (don\'t), so “not enough” would be a double negative → <b>enough</b>' },
+        { id: 'a2', s: 'A', old: true, q: 'Steven doesn\'t like having ___ homework.', opts: MMO, a: 1, tip: '<i>homework</i> ' + TIP_U + '. In English you can\'t count homework!' },
+        { id: 'a3', s: 'A', old: true, q: 'Rebecca is happy; she has ___ apples, just like she wanted.', opts: MMO, a: 2, tip: 'She has as many as she wanted → <b>enough</b>' },
+        { id: 'a4', s: 'A', old: true, q: 'I think you have had ___ to eat, don\'t you? You look like you\'ll explode.', opts: MMO, a: 1, tip: 'Food in general ' + TIP_U + ', and there was more than is good → <b>too much</b>' },
+        { id: 'a5', s: 'A', old: true, q: 'Oh no, there is ___ milk in this carton for my cereal!', opts: MMO, a: 3, tip: 'There is less milk than I need → <b>not enough</b>' },
+        { id: 'a6', s: 'A', old: true, q: 'You are asking ___ questions, it\'s giving me a headache!', opts: MMO, a: 0, tip: '<i>questions</i> ' + TIP_C + ', and there are more than is good → <b>too many</b>' },
+        { id: 'a7', s: 'A', old: true, q: 'There is ___ time, you must finish the test now.', opts: MMO, a: 3, tip: 'The time is over, there is less than we need → <b>not enough</b>' },
+        { id: 'a8', s: 'A', old: true, q: 'We can\'t sit down, there are ___ people here.', opts: MMO, a: 0, tip: '<i>people</i> ' + TIP_C + ', and there are more than is good → <b>too many</b>' },
+        // A — nové
+        { id: 'a9', s: 'A', q: 'How ___ brothers do you have?', opts: ['much', 'many'], a: 1, tip: '<i>brothers</i> ' + TIP_C },
+        { id: 'a10', s: 'A', q: 'How ___ water do you drink every day?', opts: ['much', 'many'], a: 0, tip: '<i>water</i> ' + TIP_U },
+        { id: 'a11', s: 'A', q: 'There isn\'t ___ sugar in my tea.', opts: ['much', 'many'], a: 0, tip: '<i>sugar</i> ' + TIP_U },
+        { id: 'a12', s: 'A', q: 'I haven\'t got ___ friends in this town.', opts: ['much', 'many'], a: 1, tip: '<i>friends</i> ' + TIP_C },
+        { id: 'a13', s: 'A', q: 'How ___ money did you spend?', opts: ['much', 'many'], a: 0, tip: '<i>money</i> ' + TIP_U + ' (you can count coins, but not “money”)' },
+        { id: 'a14', s: 'A', q: 'This bag is so heavy! I put ___ books in it.', opts: MMO, a: 0, tip: '<i>books</i> ' + TIP_C + ', and there are more than is good → <b>too many</b>' },
+        { id: 'a15', s: 'A', q: 'I can\'t sleep. I drank ___ coffee.', opts: MMO, a: 1, tip: '<i>coffee</i> ' + TIP_U + ', and I drank more than is good → <b>too much</b>' },
+        { id: 'a16', s: 'A', q: 'You can\'t buy that bike. You have ___ money.', opts: MMO, a: 3, tip: 'You have less money than you need → <b>not enough</b>' },
+        { id: 'a17', s: 'A', q: 'There are ___ cars in the city. The air is dirty.', opts: MMO, a: 0, tip: '<i>cars</i> ' + TIP_C + ', and there are more than is good → <b>too many</b>' },
+        { id: 'a18', s: 'A', q: 'Is there ___ pizza for everyone? — Yes, there\'s lots!', opts: MMO, a: 2, tip: 'There is pizza for everyone → <b>enough</b>' },
+        { id: 'a19', s: 'A', q: 'We have ___ chairs. Two people must stand.', opts: MMO, a: 3, tip: 'There are fewer chairs than we need → <b>not enough</b>' },
+        { id: 'a20', s: 'A', q: 'Tom is 1 metre tall. He isn\'t tall ___ to ride the rollercoaster.', opts: ['many', 'much', 'enough', 'too'], a: 2, tip: '<b>enough</b> goes <u>after</u> an adjective: <i>tall enough, old enough</i>' },
+        { id: 'a21', s: 'A', q: 'There was ___ snow, so we couldn\'t drive to school.', opts: MMO, a: 1, tip: '<i>snow</i> ' + TIP_U + ', and there was more than is good → <b>too much</b>' }
+    ];
+
+    // A — countable / uncountable třídění
+    [['money', 0], ['apples', 1], ['milk', 0], ['time', 0], ['homework', 0], ['people', 1],
+     ['questions', 1], ['water', 0], ['bread', 0], ['sweets', 1], ['information', 0],
+     ['toys', 1], ['juice', 0], ['children', 1], ['rice', 0], ['music', 0]].forEach(function (w) {
+        Q.push({
+            id: 'ac-' + w[0], s: 'A', instr: 'Countable or uncountable?',
+            q: '<b>' + w[0] + '</b>', opts: ['uncountable → much', 'countable → many'], a: w[1],
+            tip: w[1] ? 'You can count it (one, two, three…) → <b>many ' + w[0] + '</b>' : 'You can\'t count it → <b>much ' + w[0] + '</b>'
+        });
+    });
+
+    // B — past simple tvary
+    VERBS.forEach(function (v) {
+        if (v[0] === 'be') return;
+        var isOld = OLD_VERBS.indexOf(v[0]) !== -1;
+        Q.push({
+            id: 'bv-' + v[0], s: 'B', type: 'type', old: isOld, instr: 'Write the past simple.',
+            q: v[0] + ' → <span class="blank">?</span>', a: [v[1]],
+            tip: v[1] === v[0] ? '<b>' + v[0] + '</b> stays the same in the past simple.' : 'Irregular verb, no -ed: ' + v[0] + ' → <b>' + v[1] + '</b>'
+        });
+    });
+    // B — pravidelná slovesa s pravopisem
+    [['study', 'studied', 'y → ied'], ['stop', 'stopped', 'double the last letter'], ['cry', 'cried', 'y → ied'],
+     ['play', 'played', 'vowel + y stays y'], ['cook', 'cooked', 'regular -ed'], ['plan', 'planned', 'double the last letter']].forEach(function (v) {
+        Q.push({ id: 'br-' + v[0], s: 'B', type: 'type', instr: 'Write the past simple.', q: v[0] + ' → <span class="blank">?</span>', a: [v[1]], tip: v[0] + ' → <b>' + v[1] + '</b> (' + v[2] + ')' });
+    });
+    Q.push(
+        { id: 'b1', s: 'B', type: 'type', old: true, instr: 'Write a question in the past simple.', q: 'you / cook / yesterday <span class="blank">?</span>', a: ['did you cook yesterday', 'did you cook dinner yesterday', 'did you cook lunch yesterday', 'did you cook breakfast yesterday'], tip: 'Question: <b>Did</b> + person + base form → <b>Did you cook yesterday?</b>' },
+        { id: 'b2', s: 'B', type: 'type', old: true, instr: 'Make it negative.', q: 'I swam yesterday.', a: ['i did not swim yesterday'], tip: 'Negative: <b>didn\'t</b> + base form → <b>I didn\'t swim yesterday.</b> (not “swam”, not “Yes…”)' },
+        { id: 'b3', s: 'B', type: 'type', old: true, instr: 'Fill in the past simple of STUDY.', q: 'Yesterday I <span class="blank">___</span> for my test.', a: ['studied'], tip: 'study → <b>studied</b> (y → ied)' },
+        { id: 'b4', s: 'B', type: 'type', instr: 'Make it negative.', q: 'She went to the cinema.', a: ['she did not go to the cinema'], tip: '<b>She didn\'t go to the cinema.</b> After didn\'t use the base form <i>go</i>.' },
+        { id: 'b5', s: 'B', type: 'type', instr: 'Make a question.', q: 'They played football.', a: ['did they play football'], tip: '<b>Did they play football?</b> After did use the base form <i>play</i>.' },
+        { id: 'b6', s: 'B', type: 'type', instr: 'Make it negative.', q: 'We ate pizza last night.', a: ['we did not eat pizza last night'], tip: '<b>We didn\'t eat pizza last night.</b>' },
+        { id: 'b7', s: 'B', type: 'type', instr: 'Make a question.', q: 'He found his keys.', a: ['did he find his keys'], tip: '<b>Did he find his keys?</b> found → find' },
+        { id: 'b8', s: 'B', q: 'Did you ___ the film last night?', opts: ['saw', 'see', 'seen'], a: 1, tip: 'After <b>did</b> always use the base form → <b>see</b>' },
+        { id: 'b9', s: 'B', q: 'She didn\'t ___ to school on Monday.', opts: ['went', 'go', 'goes'], a: 1, tip: 'After <b>didn\'t</b> always use the base form → <b>go</b>' },
+        { id: 'b10', s: 'B', q: 'I ___ my grandma last weekend.', opts: ['meet', 'meeted', 'met'], a: 2, tip: 'meet → <b>met</b>' },
+        { id: 'b11', s: 'B', type: 'type', instr: 'Correct the mistake. Write the whole sentence.', q: 'I didn\'t went to the park.', a: ['i did not go to the park'], tip: '<b>I didn\'t go to the park.</b> didn\'t + go' },
+        { id: 'b12', s: 'B', type: 'type', instr: 'Correct the mistake. Write the whole sentence.', q: 'He maked a cake.', a: ['he made a cake'], tip: 'make → <b>made</b>' },
+        { id: 'b13', s: 'B', type: 'type', instr: 'Correct the mistake. Write the whole sentence.', q: 'We putted the books on the table.', a: ['we put the books on the table'], tip: 'put → <b>put</b> (stays the same)' },
+        { id: 'b14', s: 'B', type: 'type', instr: 'Correct the mistake. Write the whole sentence.', q: 'Yesterday I spended all my money.', a: ['yesterday i spent all my money'], tip: 'spend → <b>spent</b>' },
+        { id: 'b15', s: 'B', type: 'type', instr: 'Correct the mistake. Write the whole sentence.', q: 'Did she found her phone?', a: ['did she find her phone'], tip: 'After did use the base form → <b>Did she find her phone?</b>' }
+    );
+
+    // C — past participle
+    VERBS.forEach(function (v) {
+        var a = [v[2]];
+        if (v[0] === 'go') a.push('been');
+        Q.push({
+            id: 'cv-' + v[0], s: 'C', type: 'type', instr: 'Write the 3rd form (past participle).',
+            q: 'I have <span class="blank">___</span> <span style="color:#94a3b8">(' + v[0] + ')</span>', a: a,
+            tip: v[0] + ' → ' + v[1] + ' → <b>' + v[2] + '</b>'
+        });
+    });
+    Q.push(
+        { id: 'c1', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'I <span class="blank">___</span> (never / see) a whale.', a: ['have never seen'], tip: '<b>have never seen</b>: have + never + past participle' },
+        { id: 'c2', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'She <span class="blank">___</span> (already / finish) her homework.', a: ['has already finished'], tip: 'she → <b>has</b>: <b>has already finished</b>' },
+        { id: 'c3', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'Have you ever <span class="blank">___</span> (eat) sushi?', a: ['eaten'], tip: 'eat → ate → <b>eaten</b>' },
+        { id: 'c4', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'They <span class="blank">___</span> (not / visit) London yet.', a: ['have not visited'], tip: '<b>haven\'t visited</b>: negative: have not + past participle' },
+        { id: 'c5', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'Oh no! He <span class="blank">___</span> (just / break) his arm.', a: ['has just broken'], tip: 'he → has: <b>has just broken</b>' },
+        { id: 'c6', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'My dad <span class="blank">___</span> (lose) his keys again.', a: ['has lost'], tip: 'my dad = he → <b>has lost</b>' },
+        { id: 'c7', s: 'C', type: 'type', instr: 'Fill in the present perfect.', q: 'We <span class="blank">___</span> (live) here since 2020.', a: ['have lived'], tip: '<b>have lived</b>: since = from that time until now' },
+        { id: 'c8', s: 'C', q: 'I have ___ my homework.', opts: ['did', 'done', 'do'], a: 1, tip: 'have + past participle: do → did → <b>done</b>' },
+        { id: 'c9', s: 'C', q: 'She ___ been to Paris three times.', opts: ['have', 'has', 'is'], a: 1, tip: 'she → <b>has</b>' },
+        { id: 'c10', s: 'C', q: 'Have you finished your lunch ___?', opts: ['yet', 'already', 'ago'], a: 0, tip: '<b>yet</b> is used in questions and negatives, at the end of the sentence' },
+        { id: 'c11', s: 'C', q: 'I\'m not hungry. I have ___ eaten.', opts: ['yet', 'already', 'ago'], a: 1, tip: '<b>already</b> is used in statements, between have and the verb' },
+        { id: 'c12', s: 'C', q: 'I have ___ been to Italy. I\'d love to go!', opts: ['ever', 'never', 'yet'], a: 1, tip: '<b>never</b> = not at any time' },
+        { id: 'c13', s: 'C', q: 'Have you ___ seen a ghost?', opts: ['ever', 'never', 'yet'], a: 0, tip: '<b>ever</b> = at any time (in questions)' },
+        { id: 'c14', s: 'C', q: 'Tom has lived here ___ 2019.', opts: ['since', 'for', 'ago'], a: 0, tip: '<b>since</b> + a point in time (2019, Monday, Christmas)' },
+        { id: 'c15', s: 'C', q: 'I have known her ___ five years.', opts: ['since', 'for', 'ago'], a: 1, tip: '<b>for</b> + a length of time (five years, two weeks)' },
+        { id: 'c16', s: 'C', q: 'My friends ___ arrived.', opts: ['has just', 'have just', 'just have'], a: 1, tip: 'my friends = they → <b>have just</b> arrived' },
+        { id: 'c17', s: 'C', q: 'He hasn\'t ___ his room yet.', opts: ['clean', 'cleaned', 'cleaning'], a: 1, tip: 'have/has + past participle → <b>cleaned</b>' }
+    );
+
+    // D — PP vs PS
+    var PSPP = function (id, q, ps, pp, a, tip, old) {
+        Q.push({ id: id, s: 'D', q: q, opts: [ps, pp], a: a, tip: tip, old: !!old });
+    };
+    PSPP('d1', 'I ___ to London last summer.', 'went', 'have been', 0, '<b>last summer</b> tells us when → past simple');
+    PSPP('d2', 'Have you ever been to London? — Yes, I ___ there last summer.', 'went', 'have been', 0, 'The question is present perfect, but the answer says <b>when</b> (last summer) → past simple');
+    PSPP('d3', 'I ___ a horse. I\'d love to try!', 'never rode', 'have never ridden', 1, '<b>never</b> = in my whole life until now → present perfect');
+    PSPP('d4', 'We ___ this film yesterday.', 'saw', 'have seen', 0, '<b>yesterday</b> → past simple');
+    PSPP('d5', 'I can\'t find my phone. I think I ___ it!', 'lost', 'have lost', 1, 'The result is now (I don\'t have my phone) and we don\'t say when → present perfect');
+    PSPP('d6', 'She ___ her homework two hours ago.', 'finished', 'has finished', 0, '<b>ago</b> → always past simple');
+    PSPP('d7', 'Look! Somebody ___ the window.', 'broke', 'has broken', 1, 'We see the result now and we don\'t know when it happened → present perfect');
+    PSPP('d8', '___ your new bike?', 'When did you buy', 'When have you bought', 0, '<b>When…?</b> asks about the time → always past simple');
+    PSPP('d9', 'They ___ in Prague in 2018.', 'lived', 'have lived', 0, '<b>in 2018</b> is an exact year → past simple');
+    PSPP('d10', '___ snails?', 'Did you ever eat', 'Have you ever eaten', 1, '<b>ever</b> = at any time in your life → present perfect');
+    PSPP('d11', 'Have you done your homework? — Yes, I ___ it after school.', 'did', 'have done', 0, '<b>after school</b> tells us when → past simple');
+    PSPP('d12', 'Tom ___ his leg, so he can\'t play football today.', 'broke', 'has broken', 1, 'The result is now (he can\'t play) and we don\'t say when → present perfect');
+    PSPP('d13', 'I ___ here since Monday.', 'was', 'have been', 1, '<b>since</b> → present perfect (it continues until now)');
+    PSPP('d14', 'My mum ___ me a present last week.', 'gave', 'has given', 0, '<b>last week</b> → past simple');
+    PSPP('d15', 'I ___ my homework yet.', 'didn\'t finish', 'haven\'t finished', 1, '<b>yet</b> → present perfect');
+    PSPP('d16', 'Emma ___ a beautiful picture. Look at it!', 'drew', 'has drawn', 1, 'We see the picture now and we don\'t say when → present perfect');
+    // D — signální slova
+    [['yesterday', 0], ['last week', 0], ['two days ago', 0], ['in 2020', 0], ['When…?', 0], ['last summer', 0],
+     ['ever', 1], ['never', 1], ['yet', 1], ['already', 1], ['just', 1], ['since Monday', 1], ['for three years', 1]].forEach(function (w, i) {
+        Q.push({
+            id: 'ds' + i, s: 'D', instr: 'Which tense goes with this word?', q: '<b>' + w[0] + '</b>',
+            opts: ['past simple', 'present perfect'], a: w[1],
+            tip: w[1] ? 'It doesn\'t say an exact time in the past → <b>present perfect</b>' : 'It says exactly when → <b>past simple</b>'
+        });
+    });
+
+    var BY_ID = {};
+    Q.forEach(function (q) { BY_ID[q.id] = q; });
+
+    // ── Úložiště ────────────────────────────────────────────────────
+    function load(key, fallback) {
+        try { var v = JSON.parse(localStorage.getItem(key)); return v || fallback; } catch (e) { return fallback; }
+    }
+    function save(key, val) {
+        try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* private mode */ }
+    }
+    var mistakes = load(MISTAKES_KEY, []).filter(function (id) { return BY_ID[id]; });
+    var best = load(BEST_KEY, {});
+
+    // ── Pomocné ─────────────────────────────────────────────────────
+    function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+    }
+    function norm(s) {
+        s = String(s).toLowerCase().replace(/[’‘`´]/g, "'").trim();
+        s = s.replace(/[.?!,]+/g, ' ');
+        // zkrácené tvary bez apostrofu: didnt → didn't
+        s = s.replace(/\b(did|do|does|has|have|was|were|is|are|ca|wo)nt\b/g, "$1n't");
+        s = s.replace(/\bcan't\b/g, 'can not').replace(/\bwon't\b/g, 'will not');
+        s = s.replace(/\b(did|do|does|has|have|was|were|is|are)n't\b/g, '$1 not');
+        s = s.replace(/\b(i|you|we|they)'ve\b/g, '$1 have');
+        s = s.replace(/\s+/g, ' ').trim();
+        return s;
+    }
+    function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+    function plain(html) { var d = document.createElement('div'); d.innerHTML = html; return d.textContent; }
+    function answerText(q) {
+        if (q.type === 'type') {
+            var a = q.a[0];
+            if (/^(i|she|we|he|they|yesterday|did) /.test(a)) {
+                // celé věty: hezký zápis s velkým písmenem a zkrácenými tvary
+                a = a.replace(/\bdid not\b/, "didn't").replace(/\bi\b/g, 'I');
+                a = a.charAt(0).toUpperCase() + a.slice(1) + (/^did /.test(q.a[0]) ? '?' : '.');
+            } else {
+                a = a.replace(/\bhave not\b/, "haven't");
+            }
+            return a;
+        }
+        return q.opts[q.a];
+    }
+    function pick(section, n) {
+        var pool = Q.filter(function (q) { return q.s === section; });
+        // otázky z minulého testu mají přednost, aby se objevily častěji
+        var old = shuffle(pool.filter(function (q) { return q.old; }));
+        var rest = shuffle(pool.filter(function (q) { return !q.old; }));
+        var nOld = Math.min(old.length, Math.ceil(n * 0.4));
+        return shuffle(old.slice(0, nOld).concat(rest.slice(0, n - nOld)));
+    }
+
+    // ── Odpočet ─────────────────────────────────────────────────────
+    (function () {
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var days = Math.round((TEST_DATE - today) / 86400000);
+        var el = document.getElementById('countdown');
+        if (days > 1) el.textContent = '🗓️ Test on 1 December · ' + days + ' days left';
+        else if (days === 1) el.textContent = '🗓️ Test is tomorrow! Good luck!';
+        else if (days === 0) el.textContent = '🍀 Test is today! Good luck!';
+        else el.classList.add('hidden');
+    }());
+
+    // ── Tabulka sloves ──────────────────────────────────────────────
+    document.getElementById('verb-table').innerHTML =
+        '<tr><th>base</th><th>past simple</th><th>past participle</th></tr>' +
+        VERBS.map(function (v) { return '<tr><td>' + v[0] + '</td><td>' + v[1] + '</td><td>' + v[2] + '</td></tr>'; }).join('');
+
+    // ── Menu ────────────────────────────────────────────────────────
+    var menuEl = document.getElementById('menu');
+    var quizEl = document.getElementById('quiz');
+    var resultsEl = document.getElementById('results');
+    var backLink = document.querySelector('.breadcrumb a');
+    backLink.addEventListener('click', function (e) {
+        if (!document.body.classList.contains('in-quiz')) return;
+        e.preventDefault();
+        renderMenu();
+        show(menuEl);
+    });
+
+    function show(el) {
+        [menuEl, quizEl, resultsEl].forEach(function (e) { e.classList.add('hidden'); });
+        el.classList.remove('hidden');
+        // v kvízu bez nadpisu, Back vede do menu testu
+        var inQuiz = el !== menuEl;
+        document.body.classList.toggle('in-quiz', inQuiz);
+        backLink.textContent = inQuiz ? '← Menu' : '← Back';
+        window.scrollTo(0, 0);
+    }
+
+    function renderMenu() {
+        var grid = document.getElementById('menu-grid');
+        grid.innerHTML = '';
+        function btn(cls, icon, name, desc, key, onClick, disabled) {
+            var b = document.createElement('button');
+            b.className = 'menu-btn ' + cls;
+            b.innerHTML = '<div class="icon">' + icon + '</div><div class="name">' + name + '</div><div class="desc">' + desc + '</div>' +
+                (key && best[key] !== undefined ? '<div class="best">Best: ' + best[key] + ' %</div>' : '');
+            b.disabled = !!disabled;
+            b.addEventListener('click', onClick);
+            grid.appendChild(b);
+        }
+        btn('full', '🏆', 'Full practice test', '24 questions from all four parts, like the real test.', 'FULL', function () {
+            start('FULL', ['A', 'B', 'C', 'D'].reduce(function (acc, s) { return acc.concat(pick(s, 6)); }, []));
+        });
+        Object.keys(SECTIONS).forEach(function (s) {
+            var sec = SECTIONS[s];
+            btn('', sec.icon, sec.name, sec.desc + ' · 12 questions', s, function () { start(s, pick(s, 12)); });
+        });
+        btn('mistakes', '🔁', 'Practice mistakes (' + mistakes.length + ')',
+            mistakes.length ? 'Questions you got wrong. Answer correctly to remove them.' : 'No mistakes yet. Do a test first!', null,
+            function () { start('MISTAKES', shuffle(mistakes.map(function (id) { return BY_ID[id]; }))); },
+            mistakes.length === 0);
+    }
+
+    // ── Kvíz ────────────────────────────────────────────────────────
+    var state = null;
+
+    function start(mode, questions) {
+        state = { mode: mode, qs: questions, i: 0, answers: [] };
+        show(quizEl);
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        var q = state.qs[state.i];
+        var n = state.qs.length;
+        var correct = state.answers.filter(function (a) { return a.ok; }).length;
+        document.getElementById('q-section').textContent = SECTIONS[q.s].name;
+        document.getElementById('q-count').textContent = (state.i + 1) + ' / ' + n;
+        document.getElementById('q-bar').style.width = (state.i / n * 100) + '%';
+        document.getElementById('q-instr').textContent = q.instr || '';
+        document.getElementById('q-text').innerHTML = q.q.replace(/<span class="blank">___<\/span>/g, '___')
+            .replace(/___/g, '<span class="blank">&nbsp;</span>');
+        document.getElementById('q-feedback').innerHTML = '';
+        document.getElementById('next-row').classList.add('hidden');
+
+        var box = document.getElementById('q-answer');
+        box.innerHTML = '';
+        if (q.type === 'type') {
+            box.innerHTML = '<div class="type-row"><input class="type-input" id="type-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type your answer…"><button class="btn" id="check-btn">Check</button></div>';
+            var input = document.getElementById('type-input');
+            input.focus();
+            document.getElementById('check-btn').addEventListener('click', function () { checkTyped(q, input); });
+        } else {
+            var wrap = document.createElement('div');
+            wrap.className = 'options' + (q.opts.length === 2 ? ' two' : '');
+            q.opts.forEach(function (o, idx) {
+                var b = document.createElement('button');
+                b.className = 'opt';
+                b.innerHTML = '<span class="key">' + 'abcd'[idx] + ')</span>' + esc(o);
+                b.addEventListener('click', function () { checkChoice(q, idx); });
+                wrap.appendChild(b);
+            });
+            box.appendChild(wrap);
+        }
+    }
+
+    function checkChoice(q, idx) {
+        var btns = document.querySelectorAll('.opt');
+        if (btns[0].disabled) return;
+        btns.forEach(function (b, i) {
+            b.disabled = true;
+            if (i === q.a) b.classList.add('correct');
+            else if (i === idx) b.classList.add('wrong');
+        });
+        finish(q, idx === q.a, q.opts[idx]);
+    }
+
+    function checkTyped(q, input) {
+        if (input.disabled) return;
+        var val = input.value;
+        if (!val.trim()) { input.focus(); return; }
+        var ok = q.a.some(function (a) { return norm(a) === norm(val); });
+        input.disabled = true;
+        input.classList.add(ok ? 'correct' : 'wrong');
+        document.getElementById('check-btn').classList.add('hidden');
+        finish(q, ok, val);
+    }
+
+    function finish(q, ok, given) {
+        state.answers.push({ q: q, ok: ok, given: given });
+        var mi = mistakes.indexOf(q.id);
+        if (!ok && mi === -1) mistakes.push(q.id);
+        if (ok && mi !== -1 && state.mode === 'MISTAKES') mistakes.splice(mi, 1);
+        save(MISTAKES_KEY, mistakes);
+
+        var fb = document.getElementById('q-feedback');
+        fb.innerHTML = '<div class="feedback ' + (ok ? 'ok' : 'bad') + '">' +
+            '<div class="verdict"><span class="mark">' + (ok ? '✓' : '✕') + '</span>' + (ok ? 'Correct!' : 'Not quite') + '</div>' +
+            (ok ? '' : '<div class="answer-row"><span class="label">Correct answer</span><span class="answer">' + esc(answerText(q)) + '</span></div>') +
+            '<div class="tip"><span class="label">Why</span>' + q.tip + '</div></div>';
+        var nextRow = document.getElementById('next-row');
+        nextRow.classList.remove('hidden');
+        document.getElementById('next-btn').textContent = state.i + 1 < state.qs.length ? 'Next →' : 'See results';
+        document.getElementById('next-btn').focus();
+    }
+
+    function next() {
+        state.i++;
+        if (state.i < state.qs.length) renderQuestion();
+        else renderResults();
+    }
+
+    // ── Výsledky ────────────────────────────────────────────────────
+    function renderResults() {
+        var n = state.answers.length;
+        var correct = state.answers.filter(function (a) { return a.ok; }).length;
+        var pct = Math.round(correct / n * 100);
+        if (state.mode !== 'MISTAKES' && (best[state.mode] === undefined || pct > best[state.mode])) {
+            best[state.mode] = pct;
+            save(BEST_KEY, best);
+        }
+        document.getElementById('r-score').textContent = correct + ' / ' + n;
+        document.getElementById('r-grade').textContent =
+            pct >= 90 ? '🌟 Excellent! (' + pct + ' %)' :
+            pct >= 75 ? '👍 Very good! (' + pct + ' %)' :
+            pct >= 50 ? '💪 Good, keep practising! (' + pct + ' %)' :
+            '📚 Read the rules and try again. (' + pct + ' %)';
+
+        var per = {};
+        state.answers.forEach(function (a) {
+            per[a.q.s] = per[a.q.s] || { ok: 0, n: 0 };
+            per[a.q.s].n++;
+            if (a.ok) per[a.q.s].ok++;
+        });
+        var secKeys = Object.keys(per).sort();
+        document.getElementById('r-sections').innerHTML = secKeys.length > 1 ? secKeys.map(function (s) {
+            return '<div class="sec-score"><span>' + SECTIONS[s].icon + ' ' + SECTIONS[s].name + '</span><b>' + per[s].ok + ' / ' + per[s].n + '</b></div>';
+        }).join('') : '';
+
+        var wrong = state.answers.filter(function (a) { return !a.ok; });
+        document.getElementById('r-review').innerHTML = wrong.length ? '<h3>Your mistakes</h3>' + wrong.map(function (a) {
+            return '<div class="review-item">' + esc(plain(a.q.q)) + '<br><span class="you">' + esc(a.given) + '</span> → <span class="right">' + esc(answerText(a.q)) + '</span></div>';
+        }).join('') : '<p style="text-align:center">No mistakes! 🎉</p>';
+
+        var mBtn = document.getElementById('r-mistakes');
+        mBtn.textContent = 'Practice mistakes (' + mistakes.length + ')';
+        mBtn.classList.toggle('hidden', mistakes.length === 0);
+        show(resultsEl);
+    }
+
+    document.getElementById('next-btn').addEventListener('click', next);
+    document.getElementById('r-again').addEventListener('click', function () {
+        if (state.mode === 'MISTAKES') { renderMenu(); show(menuEl); return; }
+        if (state.mode === 'FULL') start('FULL', ['A', 'B', 'C', 'D'].reduce(function (acc, s) { return acc.concat(pick(s, 6)); }, []));
+        else start(state.mode, pick(state.mode, 12));
+    });
+    document.getElementById('r-mistakes').addEventListener('click', function () {
+        start('MISTAKES', shuffle(mistakes.map(function (id) { return BY_ID[id]; })));
+    });
+    document.getElementById('r-menu').addEventListener('click', function () { renderMenu(); show(menuEl); });
+
+    // Klávesnice: Enter = zkontrolovat / další, a–d nebo 1–4 = volba
+    document.addEventListener('keydown', function (e) {
+        if (quizEl.classList.contains('hidden')) return;
+        var nextVisible = !document.getElementById('next-row').classList.contains('hidden');
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (nextVisible) { next(); return; }
+            var input = document.getElementById('type-input');
+            if (input) checkTyped(state.qs[state.i], input);
+            return;
+        }
+        if (nextVisible || document.getElementById('type-input')) return;
+        var map = { a: 0, b: 1, c: 2, d: 3, '1': 0, '2': 1, '3': 2, '4': 3 };
+        var idx = map[e.key.toLowerCase()];
+        var q = state.qs[state.i];
+        if (idx !== undefined && idx < q.opts.length) checkChoice(q, idx);
+    });
+
+    renderMenu();
+}());
+</script>
+</body>
+</html>

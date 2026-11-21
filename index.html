@@ -130,6 +130,27 @@
             .card.card-tournament:hover {
                 background-color: #3d5166;
             }
+            /* Zvýrazněná dlaždice testu nad spelling bee (skryje se po datu testu) */
+            .test-banner {
+                display: flex;
+                align-items: center;
+                gap: 1.2rem;
+                margin-bottom: 1.5rem;
+                padding: 1.5rem 2rem;
+                background: linear-gradient(135deg, #8e44ad 0%, #5b2c83 100%);
+                border-bottom-color: var(--primary);
+                color: #fff;
+            }
+            .test-banner:hover { background-color: #8e44ad; filter: brightness(1.08); }
+            .test-banner .card-icon { margin: 0; flex-shrink: 0; }
+            .test-banner .card-title,
+            .test-banner .card-description { color: #fff; }
+            .test-banner .card-description { opacity: 0.9; }
+            .test-banner .badge { background: var(--primary); color: var(--secondary); }
+            @media (max-width: 480px) {
+                .test-banner { flex-direction: column; text-align: center; padding: 1.5rem; }
+                .test-banner .card-title { justify-content: center; flex-wrap: wrap; }
+            }
             .card-icon {
                 font-size: 3rem;
                 margin-bottom: 1rem;
@@ -279,6 +300,17 @@
                 <h1><img src="logo_shaggy_transparent.png" alt="HippoBee logo" class="logo-img"><span class="logo-hippo" style="margin-left:0.5rem">Hippo</span><span class="logo-bee">Bee</span></h1>
             </header>
 
+            <a href="english/grammar/test-2026-12-01/" class="card test-banner" id="test-banner" data-until="2026-12-01">
+                <div class="card-icon">📝</div>
+                <div>
+                    <div class="card-title">English Test Prep <span class="badge" id="test-banner-badge">1 December</span></div>
+                    <div class="card-description">
+                        Get ready for the test! Present perfect vs. past simple,
+                        much / many / enough and irregular verbs.
+                    </div>
+                </div>
+            </a>
+
             <div class="section">
                 <div class="cards-grid" id="bee-cards-grid">
                     <!-- Cards generated dynamically from words.js (weekly sets first, tournament last) -->
@@ -289,6 +321,14 @@
                 <summary>▼ Grammar exercises</summary>
                 <div class="grammar-inner">
                     <div class="cards-grid">
+                        <a href="english/grammar/test-2026-12-01/" class="card">
+                            <div class="card-icon">📝</div>
+                            <div class="card-title">Test Prep: 1 December</div>
+                            <div class="card-description">
+                                Present perfect vs. past simple, much / many / enough
+                                and irregular verbs
+                            </div>
+                        </a>
                         <a href="english/grammar/irregular-verbs-1/" class="card">
                             <div class="card-icon">🚀</div>
                             <div class="card-title">Irregular Verbs Quest #1</div>
@@ -321,11 +361,25 @@
         </div>
 
         <footer>
-            <small>v1.12.16</small>
+            <small>v1.12.17</small>
         </footer>
 
         <script src="english/spelling-bees/shared/words.js"></script>
         <script>
+            // Dlaždice testu: odpočet, po dni testu zmizí (karta v Grammar exercises zůstává)
+            (function () {
+                var banner = document.getElementById('test-banner');
+                var p = banner.getAttribute('data-until').split('-');
+                var testDay = new Date(+p[0], +p[1] - 1, +p[2]);
+                var today = new Date(); today.setHours(0, 0, 0, 0);
+                var days = Math.round((testDay - today) / 86400000);
+                var badge = document.getElementById('test-banner-badge');
+                if (days < 0) banner.remove();
+                else if (days === 0) badge.textContent = 'Today! 🍀';
+                else if (days === 1) badge.textContent = 'Tomorrow!';
+                else badge.textContent = '1 December · ' + days + ' days left';
+            }());
+
             document.addEventListener('DOMContentLoaded', function () {
                 var grid = document.getElementById('bee-cards-grid');
                 var sets = Object.keys(SPELLING_BEE_SETS).sort().reverse(); // newest first
