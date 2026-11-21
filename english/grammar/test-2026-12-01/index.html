@@ -130,6 +130,35 @@
         .rules td, .rules th { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
         .rules th { background: #f8fafc; }
 
+        /* Learn list */
+        .menu-btn.learn-btn { border-color: var(--success); background: #f0fdf4; }
+        .learn h2 { margin-bottom: 4px; }
+        .learn h3 { margin: 24px 0 8px; color: var(--accent); }
+        .learn-hint, .learn-note { color: var(--muted); font-size: 0.92rem; }
+        .learn-note { margin-top: 6px; }
+        .cover-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; color: var(--muted); font-size: 0.92rem; }
+        .cover-btn {
+            padding: 6px 12px; border: 2px solid #e2e8f0; border-radius: 20px; background: white;
+            font: inherit; font-size: 0.9rem; cursor: pointer; color: var(--secondary);
+        }
+        .cover-btn.on { border-color: var(--accent); background: var(--accent); color: white; }
+        .learn-table { border-collapse: collapse; width: 100%; font-size: 1.05rem; }
+        .learn-table th { text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 6px 10px; border-bottom: 2px solid #e2e8f0; }
+        .learn-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+        .learn-table tr:nth-child(even) td { background: #fafafa; }
+        .learn-table td.c0 { font-weight: 700; }
+        .learn-table td.rule { color: var(--muted); font-size: 0.9rem; }
+        .learn-table.hide-1 td.c1:not(.shown), .learn-table.hide-2 td.c2:not(.shown) {
+            color: transparent; background: #ede9fe; cursor: pointer; border-radius: 10px;
+            border: solid #fff; border-width: 3px 0 3px 8px; background-clip: padding-box;
+        }
+        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .two-cols .col { background: #f8fafc; border-radius: 14px; padding: 12px 14px; }
+        .two-cols .col h4 { margin-bottom: 6px; }
+        .two-cols .col .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }
+        .two-cols .col ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+        .two-cols .col li { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px 10px; }
+
         @media (max-width: 520px) {
             h1 { font-size: 1.7rem; }
             .question { font-size: 1.2rem; }
@@ -192,9 +221,41 @@
                 </table>
                 <p style="margin-top:8px">“Have you ever…?” is present perfect. When you say <b>when</b> it happened, switch to past simple: <i>Yes, I <b>went</b> there last summer.</i></p>
 
-                <h4>Irregular verbs</h4>
-                <table id="verb-table"></table>
+                <p style="margin-top:12px">All irregular verbs and words to learn are in <b>📖 Learn list</b> above.</p>
             </details>
+        </div>
+    </div>
+
+    <!-- LEARN LIST -->
+    <div id="learn" class="card learn hidden">
+        <h2>📖 Learn list</h2>
+        <p class="learn-hint">Say the hidden words out loud, then tap to check. Tap the buttons to show or hide a whole column.</p>
+
+        <h3>Irregular verbs</h3>
+        <div class="cover-row">
+            <span>Hide:</span>
+            <button class="cover-btn" data-table="learn-verbs" data-col="1">past simple</button>
+            <button class="cover-btn" data-table="learn-verbs" data-col="2">3rd form</button>
+        </div>
+        <table class="learn-table" id="learn-verbs"></table>
+        <p class="learn-note">⭐ = was in the last test</p>
+
+        <h3>Regular verbs: watch the spelling</h3>
+        <div class="cover-row">
+            <span>Hide:</span>
+            <button class="cover-btn" data-table="learn-regular" data-col="1">past simple</button>
+        </div>
+        <table class="learn-table" id="learn-regular"></table>
+
+        <h3>much or many?</h3>
+        <div class="two-cols" id="learn-nouns"></div>
+
+        <h3>Past simple or present perfect?</h3>
+        <div class="two-cols" id="learn-signals"></div>
+
+        <div class="actions">
+            <button class="btn" id="learn-practice">Practise irregular verbs</button>
+            <button class="btn btn-light" id="learn-menu">Menu</button>
         </div>
     </div>
 
@@ -291,10 +352,11 @@
         { id: 'a21', s: 'A', q: 'There was ___ snow, so we couldn\'t drive to school.', opts: MMO, a: 1, tip: '<i>snow</i> ' + TIP_U + ', and there was more than is good → <b>too much</b>' }
     ];
 
-    // A — countable / uncountable třídění
-    [['money', 0], ['apples', 1], ['milk', 0], ['time', 0], ['homework', 0], ['people', 1],
+    // A — countable / uncountable třídění (0 = uncountable, 1 = countable)
+    var NOUNS = [['money', 0], ['apples', 1], ['milk', 0], ['time', 0], ['homework', 0], ['people', 1],
      ['questions', 1], ['water', 0], ['bread', 0], ['sweets', 1], ['information', 0],
-     ['toys', 1], ['juice', 0], ['children', 1], ['rice', 0], ['music', 0]].forEach(function (w) {
+     ['toys', 1], ['juice', 0], ['children', 1], ['rice', 0], ['music', 0]];
+    NOUNS.forEach(function (w) {
         Q.push({
             id: 'ac-' + w[0], s: 'A', instr: 'Countable or uncountable?',
             q: '<b>' + w[0] + '</b>', opts: ['uncountable → much', 'countable → many'], a: w[1],
@@ -313,8 +375,9 @@
         });
     });
     // B — pravidelná slovesa s pravopisem
-    [['study', 'studied', 'y → ied'], ['stop', 'stopped', 'double the last letter'], ['cry', 'cried', 'y → ied'],
-     ['play', 'played', 'vowel + y stays y'], ['cook', 'cooked', 'regular -ed'], ['plan', 'planned', 'double the last letter']].forEach(function (v) {
+    var REGULAR = [['study', 'studied', 'y → ied'], ['stop', 'stopped', 'double the last letter'], ['cry', 'cried', 'y → ied'],
+     ['play', 'played', 'vowel + y stays y'], ['cook', 'cooked', 'regular -ed'], ['plan', 'planned', 'double the last letter']];
+    REGULAR.forEach(function (v) {
         Q.push({ id: 'br-' + v[0], s: 'B', type: 'type', instr: 'Write the past simple.', q: v[0] + ' → <span class="blank">?</span>', a: [v[1]], tip: v[0] + ' → <b>' + v[1] + '</b> (' + v[2] + ')' });
     });
     Q.push(
@@ -386,8 +449,9 @@
     PSPP('d15', 'I ___ my homework yet.', 'didn\'t finish', 'haven\'t finished', 1, '<b>yet</b> → present perfect');
     PSPP('d16', 'Emma ___ a beautiful picture. Look at it!', 'drew', 'has drawn', 1, 'We see the picture now and we don\'t say when → present perfect');
     // D — signální slova
-    [['yesterday', 0], ['last week', 0], ['two days ago', 0], ['in 2020', 0], ['When…?', 0], ['last summer', 0],
-     ['ever', 1], ['never', 1], ['yet', 1], ['already', 1], ['just', 1], ['since Monday', 1], ['for three years', 1]].forEach(function (w, i) {
+    var SIGNALS = [['yesterday', 0], ['last week', 0], ['two days ago', 0], ['in 2020', 0], ['When…?', 0], ['last summer', 0],
+     ['ever', 1], ['never', 1], ['yet', 1], ['already', 1], ['just', 1], ['since Monday', 1], ['for three years', 1]];
+    SIGNALS.forEach(function (w, i) {
         Q.push({
             id: 'ds' + i, s: 'D', instr: 'Which tense goes with this word?', q: '<b>' + w[0] + '</b>',
             opts: ['past simple', 'present perfect'], a: w[1],
@@ -466,15 +530,65 @@
         else el.classList.add('hidden');
     }());
 
-    // ── Tabulka sloves ──────────────────────────────────────────────
-    document.getElementById('verb-table').innerHTML =
-        '<tr><th>base</th><th>past simple</th><th>past participle</th></tr>' +
-        VERBS.map(function (v) { return '<tr><td>' + v[0] + '</td><td>' + v[1] + '</td><td>' + v[2] + '</td></tr>'; }).join('');
+    // ── Learn list (tahák) ──────────────────────────────────────────
+    function row(cells) {
+        return '<tr>' + cells.map(function (c, i) { return '<td class="c' + i + (c.cls ? ' ' + c.cls : '') + '">' + (c.html || c) + '</td>'; }).join('') + '</tr>';
+    }
+    document.getElementById('learn-verbs').innerHTML =
+        '<tr><th>base</th><th>past simple</th><th>3rd form <span style="text-transform:none;font-weight:400">(past participle)</span></th></tr>' +
+        VERBS.map(function (v) {
+            return row([(OLD_VERBS.indexOf(v[0]) !== -1 ? '⭐ ' : '') + v[0], v[1], v[2]]);
+        }).join('');
+    document.getElementById('learn-regular').innerHTML =
+        '<tr><th>base</th><th>past simple</th><th>why</th></tr>' +
+        REGULAR.map(function (v) { return row([v[0], v[1], { html: v[2], cls: 'rule' }]); }).join('');
+    function cols(a, b) {
+        return [a, b].map(function (c) {
+            return '<div class="col"><h4>' + c[0] + '</h4><div class="sub">' + c[1] + '</div><ul>' +
+                c[2].map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul></div>';
+        }).join('');
+    }
+    function words(list, val) { return list.filter(function (w) { return w[1] === val; }).map(function (w) { return w[0]; }); }
+    document.getElementById('learn-nouns').innerHTML = cols(
+        ['many', 'you can count them', words(NOUNS, 1)],
+        ['much', 'you can\'t count them', words(NOUNS, 0)]);
+    document.getElementById('learn-signals').innerHTML = cols(
+        ['Past simple', 'says when', words(SIGNALS, 0)],
+        ['Present perfect', 'when is not important', words(SIGNALS, 1)]);
+
+    function setCover(b, on) {
+        var t = document.getElementById(b.dataset.table);
+        t.classList.toggle('hide-' + b.dataset.col, on);
+        b.classList.toggle('on', on);
+        Array.prototype.forEach.call(t.querySelectorAll('td.c' + b.dataset.col), function (td) { td.classList.remove('shown'); });
+    }
+    // při každém otevření začíná tahák se vším zakrytým
+    function coverAll() {
+        Array.prototype.forEach.call(document.querySelectorAll('.cover-btn'), function (b) { setCover(b, true); });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.cover-btn'), function (b) {
+        b.addEventListener('click', function () { setCover(b, !b.classList.contains('on')); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.learn-table'), function (t) {
+        t.addEventListener('click', function (e) {
+            var td = e.target.closest('td');
+            if (td) td.classList.toggle('shown');
+        });
+    });
 
     // ── Menu ────────────────────────────────────────────────────────
     var menuEl = document.getElementById('menu');
     var quizEl = document.getElementById('quiz');
     var resultsEl = document.getElementById('results');
+    var learnEl = document.getElementById('learn');
+    document.getElementById('learn-menu').addEventListener('click', function () { renderMenu(); show(menuEl); });
+    document.getElementById('learn-practice').addEventListener('click', function () {
+        startVerbs();
+    });
+    // jen nepravidelná slovesa (vlastní režim, ať nepřepisuje Best sekce B)
+    function startVerbs() {
+        start('VERBS', shuffle(Q.filter(function (q) { return /^bv-/.test(q.id); })).slice(0, 12));
+    }
     var backLink = document.querySelector('.breadcrumb a');
     backLink.addEventListener('click', function (e) {
         if (!document.body.classList.contains('in-quiz')) return;
@@ -484,7 +598,7 @@
     });
 
     function show(el) {
-        [menuEl, quizEl, resultsEl].forEach(function (e) { e.classList.add('hidden'); });
+        [menuEl, quizEl, resultsEl, learnEl].forEach(function (e) { e.classList.add('hidden'); });
         el.classList.remove('hidden');
         // v kvízu bez nadpisu, Back vede do menu testu
         var inQuiz = el !== menuEl;
@@ -505,6 +619,10 @@
             b.addEventListener('click', onClick);
             grid.appendChild(b);
         }
+        btn('learn-btn', '📖', 'Learn list', 'All irregular verbs and words to learn. Hide a column and test yourself.', null, function () {
+            coverAll();
+            show(learnEl);
+        });
         btn('full', '🏆', 'Full practice test', '24 questions from all four parts, like the real test.', 'FULL', function () {
             start('FULL', ['A', 'B', 'C', 'D'].reduce(function (acc, s) { return acc.concat(pick(s, 6)); }, []));
         });
@@ -648,7 +766,8 @@
     document.getElementById('next-btn').addEventListener('click', next);
     document.getElementById('r-again').addEventListener('click', function () {
         if (state.mode === 'MISTAKES') { renderMenu(); show(menuEl); return; }
-        if (state.mode === 'FULL') start('FULL', ['A', 'B', 'C', 'D'].reduce(function (acc, s) { return acc.concat(pick(s, 6)); }, []));
+        if (state.mode === 'VERBS') startVerbs();
+        else if (state.mode === 'FULL') start('FULL', ['A', 'B', 'C', 'D'].reduce(function (acc, s) { return acc.concat(pick(s, 6)); }, []));
         else start(state.mode, pick(state.mode, 12));
     });
     document.getElementById('r-mistakes').addEventListener('click', function () {
